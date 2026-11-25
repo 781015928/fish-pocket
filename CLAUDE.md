@@ -191,7 +191,9 @@ Agent 用的 `browser` 工具有哪些动作、各要什么参数、给模型看
 
 ## 快捷指令和 Siri
 
-App 给系统提供五个操作：新对话、打开 Bot、打开 Mini App、打开网页版、查看余额。用户装好 App 就能在「快捷指令」里看到，也能对 Siri 说，不用设置。
+App 给系统提供六个操作：新对话、打开 Bot、问 Bot、打开 Mini App、打开网页版、查看余额。用户装好 App 就能在「快捷指令」里看到，也能对 Siri 说，不用设置。
+
+- 「问 Bot」可在后台启动本机引擎。先订阅目标会话，再按本次请求号匹配 Bot 的回答。Siri 等不到结果时可以继续到前台，同一请求只发送一次。
 
 - 操作在 `app/DshIOS/ShortcutIntents.swift`，「新对话」「打开 Mini App」「打开网页版」在 `app/Shared`（小组件和控制中心也用）。「打开 Mini App」「打开网页版」也是把它们放到主屏幕、点开不经过网页的办法之一（见 Mini Apps 一节的「放到主屏幕」）。Siri 说法和「快捷指令」首页的格子在 `app/DshIOS/AppShortcuts.swift`，说法的译文在 `app/DshIOS/AppShortcuts.xcstrings`，`scripts/sync-strings.sh` 不管它，要手动补齐各语言；每句说法都必须带上 App 名。
 - Bot 和 Mini App 的列表来自 App Group 里 App 写好的文件（`Share/targets.json`、`mini-apps.json`），系统读它们不需要引擎。列表变了要调 `DshShortcuts.updateAppShortcutParameters()`，Siri 才认得新名字。

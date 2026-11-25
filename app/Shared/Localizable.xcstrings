@@ -38,6 +38,46 @@
         }
       }
     },
+    "%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
     "%@\n已经安装的插件不受影响。" : {
       "localizations" : {
         "en" : {
@@ -26846,6 +26886,46 @@
         }
       }
     },
+    "你想问什么？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would you like to ask?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué quieres preguntar?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "何を質問しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무엇을 물어볼까요?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你想问什么？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你想問什麼？"
+          }
+        }
+      }
+    },
     "你用一条消息回答了" : {
       "localizations" : {
         "en" : {
@@ -40854,6 +40934,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在 App 內切換語言"
+          }
+        }
+      }
+    },
+    "在 Fish Pocket 里继续这次问答？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue this conversation in Fish Pocket?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Quieres continuar esta conversación en Fish Pocket?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fish Pocket でこの会話を続けますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fish Pocket에서 이 대화를 계속할까요?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Fish Pocket 里继续这次问答？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要在 Fish Pocket 繼續這次問答嗎？"
           }
         }
       }
@@ -64716,6 +64836,46 @@
         }
       }
     },
+    "无法启动本机引擎，请打开 Fish Pocket 查看。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The local engine could not start. Open Fish Pocket for details."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo iniciar el motor local. Abre Fish Pocket para ver los detalles."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末のエンジンを起動できません。Fish Pocket を開いて確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기기에서 엔진을 시작할 수 없습니다. Fish Pocket을 열어 확인하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法启动本机引擎，请打开 Fish Pocket 查看。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法啟動本機引擎，請開啟 Fish Pocket 查看。"
+          }
+        }
+      }
+    },
     "无法安装此插件" : {
       "localizations" : {
         "en" : {
@@ -80035,6 +80195,46 @@
         }
       }
     },
+    "用 Siri 问 Bot" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask a Bot with Siri"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pregunta a un Bot con Siri"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri で Bot に質問"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri로 Bot에게 질문하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 Siri 问 Bot"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過 Siri 詢問 Bot"
+          }
+        }
+      }
+    },
     "用「模型」里填的 DeepSeek API Key，要先填好。" : {
       "localizations" : {
         "en" : {
@@ -92484,6 +92684,46 @@
         }
       }
     },
+    "请在聊天里查看回答。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See the answer in the chat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consulta la respuesta en el chat."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チャットで回答を確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채팅에서 답변을 확인하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在聊天里查看回答。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請到對話中查看回答。"
+          }
+        }
+      }
+    },
     "请在配置文件中编辑" : {
       "localizations" : {
         "en" : {
@@ -103486,6 +103726,86 @@
         }
       }
     },
+    "问 Bot" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask a Bot"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preguntar a un Bot"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bot に質問"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bot에게 질문"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "问 Bot"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詢問 Bot"
+          }
+        }
+      }
+    },
+    "问${bot}：${question}" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask ${bot}: ${question}"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preguntar a ${bot}: ${question}"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${bot} に「${question}」と質問"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${bot}에게 질문: ${question}"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "问${bot}：${question}"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詢問${bot}：${question}"
+          }
+        }
+      }
+    },
     "问一个旁支问题：%@会根据目前的对话回答，不动手做事，也不会写进聊天记录。" : {
       "localizations" : {
         "en" : {
@@ -103618,6 +103938,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "問問它的記憶"
+          }
+        }
+      }
+    },
+    "问题" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pregunta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "質問"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "질문"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "问题"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問題"
           }
         }
       }
@@ -108194,6 +108554,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "密碼"
+          }
+        }
+      }
+    },
+    "对 Siri 说「用 Fish Pocket 问大肥鱼」，再说出问题。Siri 会读出回答，需要更多时间时可以在聊天里继续。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell Siri “Ask 大肥鱼 in Fish Pocket”, then ask your question. Siri reads the answer, or you can continue in the chat if it takes longer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dile a Siri «Pregunta a 大肥鱼 en Fish Pocket» y haz tu pregunta. Siri leerá la respuesta. Si tarda más, puedes continuar en el chat."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri に「Fish Pocket で 大肥鱼 に質問」と言ってから質問を話すと、Siri が回答を読み上げます。時間がかかる場合はチャットで続けられます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri에게 “Fish Pocket에서 大肥鱼에게 질문”이라고 하고 질문을 말하면 Siri가 답변을 읽어 줍니다. 시간이 더 필요하면 채팅에서 계속할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对 Siri 说「用 Fish Pocket 问大肥鱼」，再说出问题。Siri 会读出回答，需要更多时间时可以在聊天里继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "對 Siri 說「用 Fish Pocket 問大肥魚」，再說出問題。Siri 會唸出回答，需要更多時間時可以在對話中繼續。"
           }
         }
       }

@@ -1204,9 +1204,11 @@ struct MainView: View {
         case .web:
             webOpen = true
         case .bot(let id):
-            // A cold launch: the team arrives a moment after the engine.
+            // A Siri handoff may create this window after the engine is already running.
+            // The explicit destination wins over restoring or creating a launch conversation.
+            placeRestored = true
             let deadline = ContinuousClock.now + .seconds(10)
-            while app.botTeam.bot(id) == nil, ContinuousClock.now < deadline {
+            while (app.botTeam.bot(id) == nil || creating), ContinuousClock.now < deadline {
                 try? await Task.sleep(for: .milliseconds(100))
             }
             if app.botTeam.bot(id) != nil {

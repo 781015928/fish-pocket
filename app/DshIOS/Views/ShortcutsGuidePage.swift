@@ -71,10 +71,11 @@ struct ShortcutsGuidePage: View {
         var id: String { icon }
     }
 
-    /// The same five, in the same words and order, as `DshShortcuts`.
+    /// The actions in the same words and order as `DshShortcuts`.
     private let actionList = [
         Action(icon: "square.and.pencil", title: "新对话", detail: "打开一个新对话，可以带上一段草稿。"),
         Action(icon: "person.crop.circle", title: "打开 Bot", detail: "直接进入和某个 Bot 的聊天。"),
+        Action(icon: "bubble.left.and.text.bubble.right", title: "问 Bot", detail: "对 Siri 说「用 Fish Pocket 问大肥鱼」，再说出问题。Siri 会读出回答，需要更多时间时可以在聊天里继续。"),
         Action(icon: "square.on.circle", title: "打开 Mini App", detail: "全屏打开某个 Mini App。"),
         Action(icon: "globe", title: "打开网页版", detail: "直接进入网页版。"),
         Action(icon: "creditcard", title: "查看余额", detail: "打开余额页面。"),

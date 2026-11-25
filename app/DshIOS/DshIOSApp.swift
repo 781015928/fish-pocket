@@ -72,13 +72,27 @@ final class EngineConnection {
     private(set) var app: AppModel?
     /// The generation being connected or connected; windows that arrive during it just wait.
     @ObservationIgnored private var generation: Int?
+    @ObservationIgnored private var connecting: Task<AppModel, Never>?
 
-    func connect(to url: URL, generation current: Int) async {
-        guard current != generation else { return }
+    @discardableResult
+    func connect(to url: URL, generation current: Int) async -> AppModel {
+        if current == generation {
+            if let connecting { return await connecting.value }
+            if let app { return app }
+        }
         generation = current
-        let model = AppModel(launchURL: url)
-        await model.connect()
-        if current == generation { app = model }
+        let task = Task {
+            let model = AppModel(launchURL: url)
+            await model.connect()
+            return model
+        }
+        connecting = task
+        let model = await task.value
+        if current == generation {
+            app = model
+            connecting = nil
+        }
+        return model
     }
 }
 

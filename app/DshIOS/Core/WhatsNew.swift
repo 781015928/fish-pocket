@@ -47,6 +47,11 @@ enum WhatsNew {
     /// Newest first. Until the app reaches an entry's version (and build, when it names one),
     /// the entry is not shown. Entries of one version are shown together, newest first.
     static let releases: [Release] = [
+        Release(version: "1.2.2", build: 126, features: [
+            Feature(symbol: "bubble.left.and.text.bubble.right",
+                    title: "用 Siri 问 Bot",
+                    detail: "对 Siri 说「用 Fish Pocket 问大肥鱼」，再说出问题。Siri 会读出回答，需要更多时间时可以在聊天里继续。"),
+        ]),
         Release(version: "1.2.2", build: 125, features: [
             Feature(symbol: "phone.and.waveform",
                     title: "和智能体打电话",

@@ -28,6 +28,15 @@ struct DshShortcuts: AppShortcutsProvider {
             systemImageName: "person.crop.circle"
         )
         AppShortcut(
+            intent: AskBotIntent(),
+            phrases: [
+                "用 \(.applicationName) 问 \(\.$bot)",
+                "问 \(.applicationName) 的 \(\.$bot)",
+            ],
+            shortTitle: "问 Bot",
+            systemImageName: "bubble.left.and.text.bubble.right"
+        )
+        AppShortcut(
             intent: OpenMiniAppIntent(),
             phrases: [
                 "用 \(.applicationName) 打开 \(\.$app)",
