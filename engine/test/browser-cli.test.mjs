@@ -14,7 +14,8 @@ const catalog = {
     type: name === 'index' ? 'integer' : name === 'fullPage' ? 'boolean' : 'string',
   } })),
 };
-const command = browserCommand((_name, run) => run, () => catalog);
+const command = browserCommand((_name, run) => run, () => catalog,
+  (tools, agent, args, signal) => tools.runBrowser(agent, args, signal));
 const signal = new AbortController().signal;
 
 test('browser CLI uses the installed catalog and accepts positional and named arguments', () => {
@@ -30,10 +31,10 @@ test('browser CLI uses the installed catalog and accepts positional and named ar
 test('CLI retains the host-selected caller across concurrent commands and honors loss of the owning Agent', async () => {
   const owner = id => {
     const agent = { id }, agents = new Map([[id, agent]]);
-    return { agent, agents, signal, tools: { async invoke(connection, name, args, exec) {
-      assert.equal(connection, 'device'); assert.equal(name, 'browser'); assert.equal(exec.agent, agent);
+    return { agent, agents, signal, tools: { async runBrowser(caller, args) {
+      assert.equal(caller, agent);
       await new Promise(resolve => setImmediate(resolve));
-      return { content: [{ type: 'text', text: exec.agent.id + ' ' + args.action }] };
+      return { content: [{ type: 'text', text: caller.id + ' ' + args.action }] };
     } } };
   };
   const a = owner('a'), b = owner('b');
@@ -51,7 +52,7 @@ test('screenshots use the approved image result and write through the Shell file
   const attachments = { imageHostPath: () => undefined,
     readImage: async reference => { assert.equal(reference, ref); return { data: Buffer.from('pixels') }; } };
   const agent = { id: 'a', ctx: { get: () => attachments } };
-  const tools = { invoke: async () => ({ content: [{ type: 'image', attachment: ref }] }) };
+  const tools = { runBrowser: async () => ({ content: [{ type: 'image', attachment: ref }] }) };
   const owner = { agent, tools, signal, agents: new Map([['a', agent]]) };
   let saved;
   const shell = { cwd: '/work', signal, fs: { writeFile: async (p, data) => { saved = [p, data.toString()]; } } };
@@ -60,6 +61,6 @@ test('screenshots use the approved image result and write through the Shell file
   assert.deepEqual(saved, ['/work/snapshot.jpg', 'pixels']);
   shell.fs.writeFile = async () => { throw new Error('read-only filesystem'); };
   assert.match((await run()).stderr, /read-only/);
-  tools.invoke = async () => ({ isError: true, error: { message: 'user refused' } });
+  tools.runBrowser = async () => ({ isError: true, error: { message: 'user refused' } });
   assert.match((await run()).stderr, /user refused/);
 });

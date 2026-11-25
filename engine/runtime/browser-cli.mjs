@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { describe } from '../plugins/ios-native/binding.mjs';
+import { invokeBrowserTool } from '../plugins/ios-native/discovery.mjs';
 import { actionCaller } from './action-command.mjs';
 
 const commands = new Set(['open', 'read', 'click', 'type', 'select', 'scroll', 'back', 'forward', 'reload',
@@ -64,11 +65,11 @@ export function parseBrowserCommand(argv, catalog) {
   return { args: { action: action.name, ...params }, out };
 }
 
-async function dispatch({ args, out }, shell) {
+async function dispatch({ args, out }, shell, invoke) {
   const owner = actionCaller();
   const signal = shell.signal ?? owner.signal;
   signal.throwIfAborted();
-  const result = await owner.tools.invoke('device', 'browser', args, { agent: owner.agent, signal });
+  const result = await invoke(owner.tools, owner.agent, args, signal);
   if (result.isError) throw new Error(result.error.message);
   const text = result.content.filter(block => block.type === 'text').map(block => block.text).join('\n');
   const image = result.content.find(block => block.type === 'image')?.attachment;
@@ -85,11 +86,11 @@ async function dispatch({ args, out }, shell) {
   return text + '\nImage file: ' + file + '\nUse read_image to view it.';
 }
 
-export function browserCommand(defineCommand, catalog = () => describe('browser')) {
+export function browserCommand(defineCommand, catalog = () => describe('browser'), invoke = invokeBrowserTool) {
   return defineCommand('browser', async (argv, shell) => {
     try {
       const parsed = parseBrowserCommand(argv, catalog());
-      const output = parsed.help ?? await dispatch(parsed, shell);
+      const output = parsed.help ?? await dispatch(parsed, shell, invoke);
       return { stdout: output + '\n', stderr: '', exitCode: 0 };
     } catch (error) {
       return { stdout: '', stderr: 'browser: ' + error.message + '\n', exitCode: 1 };

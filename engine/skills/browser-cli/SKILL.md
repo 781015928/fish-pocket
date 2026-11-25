@@ -1,8 +1,10 @@
 ---
 name: browser-cli
-description: Use this conversation's iPhone or iPad browser to navigate interactive sites, click, fill forms, inspect tabs or take a screenshot.
+description: Operate the conversation's workbench browser, including forms, tabs and screenshots.
 ---
 
-Run `browser` through bash. `browser open URL` and `browser read` return the page with numbered elements. Use the latest numbers: `browser click 4`, `browser type 7 'some text'`, or `browser select 2 'an option'`. Each action returns the updated page. Use `browser tabs` and `browser help select_tab` to work with a particular tab. Sign-ins belong to the app's workbench browser. Leave passwords and payment details to the user.
+Use bash to run `browser open URL` and `browser read`. For a page that needs JavaScript, inspect its numbered controls, then use the latest number with `browser click 4`, `browser type 7 'some text'` or `browser select 2 'an option'`. Page actions return the updated page.
 
-Use `browser help ACTION` for flags. For a picture, run `browser screenshot --out page.jpg`, then use `read_image` on that file. For an inline screenshot or advanced operations such as PDF, upload, page JavaScript and downloads, use `connector_search` with the exact query `browser`, then call the structured tool. Use `web_fetch` for plain public page text.
+Run `browser tabs` to inspect which tab is in front, and `browser select_tab <id>` to bring a tab to the front. Actions default to the last tab used by the agent. The workbench shares sign-ins across conversations and keeps its own login state apart from Safari. Let the user enter passwords and payment details.
+
+Use `browser help ACTION` for flags. Take a screenshot with `browser screenshot --out page.jpg`, then open it with `read_image`. For inline screenshots, PDF, upload or page JavaScript, enable `browser` with `connector_search(query="browser")` and call the structured tool.

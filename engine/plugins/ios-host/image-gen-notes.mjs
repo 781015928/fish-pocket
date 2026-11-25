@@ -20,8 +20,6 @@ export const CANVAS_CLOSED = 'Image-gen workbench canvas: not connected.';
  * plugin's own image context, whenever the plugin is there to add it.
  */
 export const IMAGE_CONTEXT = 'dsh-image-gen:image-defaults';
-export const IMAGE_TOOLS = ['generate_image', 'generate_images', 'edit_image'];
-export const CANVAS_TOOLS = ['canvas_state', 'view_canvas'];
 export const WEB_SETTINGS_PATH = 'Settings > Plugins > Image generation';
 export const SETTINGS_CONTEXT = 'fish-pocket:image-settings';
 export const SETTINGS_NOTE = [
@@ -55,15 +53,5 @@ export function addSettingsNote(assembly) {
 
 /** Apply both to every assembly on a context that has `systemPrompt`. */
 export function installImageGenNotes(ctx) {
-  ctx.on('system-prompt/assemble', async (_assembly, context, next) => {
-    const assembly = dropClosedCanvas(await next());
-    if (context.toolSet) {
-      const tools = context.toolSet.view(context.scope);
-      const images = IMAGE_TOOLS.some(name => tools.has(name));
-      assembly.contexts = assembly.contexts.filter(entry =>
-        (entry.name !== IMAGE_CONTEXT || images)
-        && (entry.name !== CANVAS_CONTEXT || CANVAS_TOOLS.some(name => tools.has(name))));
-    }
-    return addSettingsNote(assembly);
-  });
+  ctx.on('system-prompt/assemble', async (_assembly, _context, next) => addSettingsNote(dropClosedCanvas(await next())));
 }

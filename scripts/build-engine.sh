@@ -21,7 +21,6 @@ cp -R "$src/skills" "$out/skills"
 (cd "$out" && npm install --omit=dev --os=ios --cpu=arm64 --ignore-scripts --no-audit --no-fund --loglevel=error)
 
 nm="$out/node_modules"
-bash "$root/scripts/patch-connector-plugins.sh" "$nm"
 before=$(du -sk "$nm" | cut -f1)
 # Native code: Mach-O/ELF addons and executables for other platforms, and the static
 # libraries a package ships to link its own addon against (libreoffice-kit's prebuilds).

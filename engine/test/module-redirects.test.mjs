@@ -37,17 +37,3 @@ test("DSH's own packages resolve from the engine once the profile has no copy of
   assert.match(storage, /\/engine\/node_modules\/@deepseek-ai\/dsh-storage-domain\//);
   assert.throws(library, { code: 'ERR_MODULE_NOT_FOUND' });
 });
-
-test('an old profile-local builtin cannot shadow the bundled authorization and canvas adapters', async (t) => {
-  installModuleRedirects();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-old-builtin-'));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  const old = path.join(dir, 'node_modules/ds-bot');
-  fs.mkdirSync(old, { recursive: true });
-  fs.writeFileSync(path.join(old, 'package.json'), JSON.stringify({ name: 'ds-bot', main: 'old.js' }));
-  fs.writeFileSync(path.join(old, 'old.js'), '');
-  const probe = path.join(dir, 'probe.mjs');
-  fs.writeFileSync(probe, "export default import.meta.resolve('ds-bot')");
-  assert.match((await import(probe)).default, /\/engine\/node_modules\/ds-bot\/plugin\.js$/);
-  assert.ok(fs.existsSync(path.join(old, 'old.js')));
-});

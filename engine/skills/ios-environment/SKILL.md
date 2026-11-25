@@ -1,6 +1,6 @@
 ---
 name: ios-environment
-description: This session runs inside an iOS app, not on a desktop, and many commands do not exist. Load this skill before relying on a shell command you are unsure of, whenever one fails or behaves unexpectedly, before writing or changing a DSH plugin, because the app's native interface does not run a plugin's browser code, so plugins here get no UI, and before operating another app on this phone.
+description: Use for Fish Pocket shell limits, DSH plugin work, device capabilities, or operating another iOS app.
 ---
 
 # Working on iOS
@@ -23,7 +23,6 @@ Anything not listed here should be assumed missing.
 - **Development:** `git node pnpm pnpx`
 - **Video and audio:** `ffmpeg ffprobe` (see the Video and audio section below)
 - **Workbench browser:** `browser` (load the browser-cli skill for usage)
-- **Image inspiration:** `inspiration` (load the image-tools skill for usage)
 - **Links:** `open xdg-open` hand a URL to the phone, so code that opens the system browser (a plugin's sign-in, a CLI's docs link) works. URLs only, the same schemes as the open_url tool; a file path fails. To take the user somewhere yourself, use that tool
 - **Shell:** `bash sh env printenv which type command date sleep timeout time xargs yes true false expr whoami hostname pwd history alias unalias clear help`
 
@@ -125,9 +124,9 @@ The app's native interface, built in SwiftUI, does not run a plugin's browser co
 
 **Before writing, changing or diagnosing a DSH plugin, read `references/plugins.md`**: what reaches which interface, what to tell the user before building, the built-in DS Bot and image generation plugins, and why device capabilities are not for plugins.
 
-Load `image-tools` for generation, image edits and inspiration. Use `web-canvas` for a selection on this conversation's web workbench canvas. Native chat markups arrive as image attachments.
+**Image generation is built in** (the `dsh-image-gen` plugin): `generate_image`, `generate_images`, `edit_image` and `find_inspiration`. The user picks providers, saves API keys and signs in to ChatGPT, Grok or Google subscriptions under the app's Settings → 生图 (Image Generation), the top row of the 探索 (Explore) tab (at the bottom of the sidebar on an iPad before iOS 18); a tool error naming "Settings > Plugins > Image generation" means that page. The user can mark up a picture from the conversation (标注 in the image viewer) and send the marked copy. Its canvas, gallery and Studio are only in the web version.
 
-Use `connector_search` to find an action on a connected service by service, task or exact tool name. Select an exact name when it returns several candidates. For MCP resources search for `resources:<server>`. If the service is missing, the user can connect it in Explore → Connectors.
+Services the user has connected under 连接器 (Connectors) on the app's 探索 (Explore) tab (in the sidebar on an iPad before iOS 18) (GitHub, Notion and the like) are MCP tools in every session, named `mcp__<id>__*`. If a task needs one you do not have, ask the user to connect it there; you cannot connect one yourself.
 
 ## git
 
@@ -180,30 +179,14 @@ You cannot tap through other apps by yourself. If the user has set up **iCTRL** 
 
 Rules that hold even before you read it:
 
-- Use it last: device capabilities, `open_url` and the `browser` tool come first, because they are faster and do not take over the screen.
+- Use it last: device capabilities, `open_url` and the workbench browser come first, because they are faster and do not take over the screen.
 - Whenever you stop to talk to the user (done, a question, a go-ahead, something only they can do, an error), first return to this app (`${FISH_POCKET_URL_SCHEME:-fishpocket}://`, through the service's own `open_url`), then write. They are looking at the other app and cannot see this conversation.
 - Payments, deletions, sending messages and account changes need the user's go-ahead first. Passwords, codes and captchas are theirs.
 - Never switch on its remote access or nearby discovery.
 
 ## Web browser
 
-Load `browser-cli` to use the conversation's workbench browser through bash. For advanced actions or inline images, discover the original `browser` tool by exact name. Its actions are described below.
-
-- `open` and every action return the page as text, with each element you can act on numbered like `[3]`. Pass that number as `index`. Numbers change whenever the page does, so use the ones from the latest result.
-- `screenshot` shows the visible part of the page as an image (`fullPage: true` for all of it): use it for layout, pictures and charts, not to read text. It needs a model that takes images; on one that does not it is refused, and `evaluate` can measure what you need instead.
-- Beyond clicking and typing: `evaluate` runs a script once; `addScript` keeps one running before the site's own scripts on every page load (to intercept requests or prepare the page), listed by `scripts` and removed by `removeScript`. `logs` returns the page's console output, uncaught errors and the requests its scripts made, recorded all the time.
-- `request` sends an HTTP request as this browser — its cookies and user agent, no CORS — and can save the body to a file. `cookies`, `setCookie` and `deleteCookie` reach every cookie, HttpOnly ones and other sites' included. What they return can include sign-in tokens: use them for the task, never repeat them to the user.
-- Files: a link or response the page cannot show is downloaded into `downloads/` of the working directory (`downloads` lists them); `upload` puts workspace files into a numbered file field without the picker; `pdf` saves the page as a PDF. Relative paths are from the working directory.
-- `type` and `click` are script events, which a site that checks `isTrusted` ignores. `keys` types through the system keyboard instead: the page gets trusted `beforeinput` and `input` events (no `keydown`), and a newline presses Return.
-- What it cannot do: real taps (find another way in, such as the data the page embeds), or keeping `addScript` scripts across an app restart.
-- It has tabs, and you and the user share them: there are no "user's" and "agent's" tabs. `tabs` lists them with their ids (`t1`, `t2`…), which one is in front (what the user sees) and which one you last used. `new_tab` opens one (with `url` to load a page), `select_tab` brings one to the front, `close_tab` closes one.
-- Every other action works in the tab you pass as `tab`, or else the one you last used. So the user switching tabs or opening links does not move you; results say when the user has another tab in front. Before your first `open`, `open` takes a blank tab in front or opens a new one, never replacing a page the user is on.
-- To take over a page the user opened, call `tabs` and `select_tab` it (or pass its id as `tab`). To hand one to the user, `select_tab` it so it is in front.
-- A link inside a page that would open a new window opens in the same tab.
-- Sites see a phone and usually send their mobile version. For the desktop (PC) version, pass `desktop: true` with `open` or `reload`; `desktop: false` goes back. The choice is kept for that site, and the user can switch it from the browser's menu too.
-- Sign-ins are kept across app launches and shared by every conversation's browser, but not with Safari. If a site wants a login, ask the user to sign in in the workbench once. Never type a password, card number or other secret yourself.
-- The user can watch and take over at any time; when you stop, say what is on the page.
-- A web link the user taps in your reply opens in a new tab of this browser, in front. So a Markdown link to `http://localhost:<port>` lets them look at a server you started, signed in as you are.
+Load `browser-cli` for interactive pages and screenshots in the conversation's workbench. Use `web_fetch` for public page text. For advanced actions, enable the structured tool with `connector_search(query="browser")`.
 
 ## Not possible at all
 

@@ -11,7 +11,8 @@
 import { Service } from '@deepseek-ai/cordis';
 import { capabilities, invoke } from './binding.mjs';
 import { callerClaim } from './caller.mjs';
-import { DEVICE_ACTION, TOOLS } from './tools.mjs';
+import { TOOLS } from './tools.mjs';
+import { registerDeviceTools } from './discovery.mjs';
 
 // Extra search terms for the local directory; only matches reach the model.
 const keywords = {
@@ -95,14 +96,13 @@ export default function IosNative(ctx) {
   // capability is missing is never registered, so the addon's table stays the
   // single source of truth for what exists.
   ctx.inject(['tools'], (toolsCtx) => {
+    const entries = [];
     for (const [capability, tool] of Object.entries(TOOLS)) {
       if (available[capability] === undefined) continue;
       const definition = typeof tool === 'function' ? tool(toolsCtx) : tool;
-      toolsCtx.tools.register(definition, {
-        [DEVICE_ACTION]: true,
-        discovery: { connection: 'device', keywords: capability + ' ' + (keywords[capability] ?? '') },
-      });
+      entries.push({ definition, keywords: capability + ' ' + (keywords[capability] ?? '') });
     }
+    registerDeviceTools(toolsCtx, entries);
     toolsCtx.logger.info('native capabilities: %s', Object.keys(available).join(', '));
   });
 }

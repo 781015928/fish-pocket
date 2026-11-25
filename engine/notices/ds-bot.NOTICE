@@ -3,9 +3,6 @@ Copyright 2026 Fei2411 and the DS Bot contributors
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Fish Pocket modifies the connector host to support opt-in OAuth on custom HTTPS
-services and apply the existing per-Bot access switch to MCP resources.
-
 ==============================================================================
 Third-party code in this repository
 ==============================================================================

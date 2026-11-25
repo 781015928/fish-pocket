@@ -21,7 +21,6 @@
     "@deepseek-ai/dsh-web": "0.2.2-rc.4"
   },
   "scripts": {
-    "pretest": "bash ../scripts/patch-connector-plugins.sh node_modules",
     "test": "node --test test/*.test.mjs"
   }
 }

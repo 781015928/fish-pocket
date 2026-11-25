@@ -57,19 +57,3 @@ test('the drop holds through the per-request refresh, and an opened canvas comes
   assert.deepEqual(names(opened), [IMAGE_CONTEXT, SETTINGS_CONTEXT, CANVAS_CONTEXT]);
   assert.equal(renderContextSections(opened).at(-1).text, digest);
 });
-
-test('an idle step omits media and settings notes, including an open canvas from another task', async () => {
-  const ctx = new Context();
-  await ctx.plugin(SystemPrompt, {});
-  ctx.systemPrompt.context({ name: IMAGE_CONTEXT, order: 59, text: 'Provider settings' });
-  ctx.systemPrompt.context({ name: CANVAS_CONTEXT, order: 60, text: 'Open canvas' });
-  installImageGenNotes(ctx);
-  const names = async visible => {
-    const subject = { toolSet: { view: () => new Map(visible.map(name => [name, {}])) } };
-    const assembly = await ctx.systemPrompt.assemble(subject);
-    return renderContextSections(ctx.systemPrompt.refreshContext(assembly, subject)).map(entry => entry.name);
-  };
-  assert.deepEqual(await names([]), []);
-  assert.deepEqual(await names(['edit_image']), [IMAGE_CONTEXT, SETTINGS_CONTEXT]);
-  assert.deepEqual(await names(['canvas_state']), [CANVAS_CONTEXT]);
-});

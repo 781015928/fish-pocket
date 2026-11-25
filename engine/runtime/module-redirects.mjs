@@ -2,9 +2,11 @@
 // stand-ins in shims/ at module resolution, so engine files stay untouched.
 //
 // Built-in plugins (plugins/ios-host/pins.json `builtin`) ship in the engine's own
-// node_modules. Resolve their components from the installation, including for users
-// with an older profile-local copy. Settings and credentials stay with the profile.
-// DSH's own packages retry from the engine after stale-official.mjs removes an old copy.
+// node_modules. The plugin manager finds their bundle there, but the loader imports
+// their components from the profile folder, which holds none of them: a lookup
+// that fails there is tried again from the engine's folder. A copy the profile
+// installed itself still wins, being found first. DSH's own packages get the same
+// retry, for a plugin whose old copy of one was removed on start (stale-official.mjs).
 import { readFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { isOfficial } from './stale-official.mjs';
@@ -17,6 +19,9 @@ export const REDIRECTS = {
 
 const pins = JSON.parse(readFileSync(new URL('../plugins/ios-host/pins.json', import.meta.url), 'utf8'));
 export const BUILTIN_PACKAGES = new Set(Object.entries(pins).filter(([, pin]) => pin.builtin === true).map(([name]) => name));
+/** Packages a failed lookup retries from the engine: the builtins, and DSH's own, whose old
+ * copies leave the profile on start (stale-official.mjs). */
+const fromEngine = (name) => name !== undefined && (BUILTIN_PACKAGES.has(name) || isOfficial(name));
 /** Where the engine's own dependencies resolve from. */
 export const ENGINE_PARENT = new URL('../package.json', import.meta.url).href;
 
@@ -35,14 +40,10 @@ export function installModuleRedirects() {
     resolve(specifier, context, nextResolve) {
       const url = REDIRECTS[specifier];
       if (url) return { url, format: 'module', shortCircuit: true };
-      const name = packageOf(specifier);
-      if (BUILTIN_PACKAGES.has(name)) {
-        return nextResolve(specifier, { ...context, parentURL: ENGINE_PARENT });
-      }
       try {
         return nextResolve(specifier, context);
       } catch (error) {
-        if (error?.code !== 'ERR_MODULE_NOT_FOUND' || !name || !isOfficial(name) || context.parentURL === ENGINE_PARENT) throw error;
+        if (error?.code !== 'ERR_MODULE_NOT_FOUND' || !fromEngine(packageOf(specifier)) || context.parentURL === ENGINE_PARENT) throw error;
         return nextResolve(specifier, { ...context, parentURL: ENGINE_PARENT });
       }
     },
