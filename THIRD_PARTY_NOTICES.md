@@ -69,7 +69,7 @@ libgit2 的完整许可证见其仓库的 [COPYING](https://github.com/libgit2/l
 
 - **`@deepseek-ai/libreoffice-kit`（MPL-2.0）：** 只保留了很小的 JS 外壳，平台二进制、静态库和 wasm 在打包时已删除，`office-kit` 和 Office 技能也已禁用（`engine/ios.patch.yml`）。
 - **`ds-bot`（Apache-2.0）：** 它的 npm 包只带 LICENSE，不带上游仓库的 NOTICE。按 Apache-2.0 第 4 条，`engine/notices/ds-bot.NOTICE`（取自上游 v0.3.8）在打包时放到 `ds-bot/NOTICE`，随 App 一起分发。原生界面只调用它的接口，没有使用它的界面代码。
-- **`dsh-image-gen`（Apache-2.0）：** 上游仓库没有 NOTICE，npm 包里的 LICENSE 随包分发。打包时删掉了它的 README 截图和文档，代码没有改动。原生的设置页、对话里的图片卡片和图片标注都是 App 自己的界面，只调用它的接口；网页版里用的是它自己的界面。它的灵感库收录了以下开源内容：
+- **`dsh-image-gen`（Apache-2.0）：** 上游仓库没有 NOTICE，npm 包里的 LICENSE 随包分发。打包时裁剪 README 截图和文档，并适配按会话同步网页画布选区、按编号读取灵感提示词。原生的设置页、对话里的图片卡片和图片标注都是 App 自己的界面，只调用它的接口；网页版里用的是它自己的界面。它的灵感库收录了以下开源内容：
   - 手绘风格手册取自 [yang0/handraw-style](https://github.com/yang0/handraw-style)（MIT），原作者 yang0 要求使用时署名，App 的生图设置页里也写明了出处。
   - 封面构图类型取自 [JimLiu/baoyu-skills](https://github.com/JimLiu/baoyu-skills) 的 baoyu-cover-image 技能（MIT）。
   - 案例集取自 [freestylefly/awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2)（MIT），只打包了提示词文字，示例图片在网页版里按需从网上加载，不随 App 分发。

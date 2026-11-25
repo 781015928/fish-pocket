@@ -116,6 +116,7 @@ struct ConnectorIcon: View {
 struct BotConnectorsPage: View {
     @Environment(AppModel.self) private var app
     @State private var adding = false
+    @State private var addedConnector: String?
     @State private var query = ""
     /// nil: every kind.
     @State private var category: String?
@@ -184,7 +185,8 @@ struct BotConnectorsPage: View {
         .navigationTitle("连接器")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "搜索服务")
-        .sheet(isPresented: $adding) { CustomConnectorSheet() }
+        .sheet(isPresented: $adding) { CustomConnectorSheet { addedConnector = $0 } }
+        .navigationDestination(item: $addedConnector) { BotConnectorPage(id: $0) }
         .task { await team.refreshState() }
     }
 
@@ -488,9 +490,11 @@ struct BotConnectorPage: View {
 private struct CustomConnectorSheet: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    let showSignIn: (String) -> Void
     @State private var name = ""
     @State private var url = ""
     @State private var headers = ""
+    @State private var oauth = false
     @State private var saving = false
 
     var body: some View {
@@ -499,14 +503,20 @@ private struct CustomConnectorSheet: View {
                 Section {
                     TextField("名字", text: $name)
                     TextField("https://…", text: $url).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    Picker("连接方式", selection: $oauth) {
+                        Text("请求头（可不填）").tag(false)
+                        Text(verbatim: "OAuth").tag(true)
+                    }
                 }
-                Section {
-                    TextField("Authorization: Bearer …", text: $headers, axis: .vertical).lineLimit(2...).textInputAutocapitalization(.never).autocorrectionDisabled()
-                } header: { Text("请求头（可不填）") } footer: { Text("一行一个，写成「名字: 值」。值可以写 $DSH_SECRET_名字，引用保存的密钥。") }
+                if !oauth {
+                    Section {
+                        TextField("Authorization: Bearer …", text: $headers, axis: .vertical).lineLimit(2...).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    } header: { Text("请求头（可不填）") } footer: { Text("一行一个，写成「名字: 值」。值可以写 $DSH_SECRET_名字，引用保存的密钥。") }
+                }
             }
             .navigationTitle("自定义连接器")
             .navigationBarTitleDisplayMode(.inline)
-            .saveToolbar(canSave: !name.trimmingCharacters(in: .whitespaces).isEmpty && url.hasPrefix("http"), saving: saving, cancel: { dismiss() }) {
+            .saveToolbar(canSave: !name.trimmingCharacters(in: .whitespaces).isEmpty && url.hasPrefix(oauth ? "https://" : "http"), saving: saving, cancel: { dismiss() }) {
                 saving = true
                 Task {
                     var fields: [String: JSON] = [:]
@@ -515,9 +525,12 @@ private struct CustomConnectorSheet: View {
                         fields[line[..<colon].trimmingCharacters(in: .whitespaces)] = .string(line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces))
                     }
                     do {
-                        let value = try await app.botTeam.call("connector-add", ["name": .string(name), "url": .string(url), "headers": .object(fields)])
+                        var payload: [String: JSON] = ["name": .string(name), "url": .string(url)]
+                        if oauth { payload["auth"] = ["kind": "oauth"] } else { payload["headers"] = .object(fields) }
+                        let value = try await app.botTeam.call("connector-add", .object(payload))
                         app.botTeam.applyConnectors(value)
                         dismiss()
+                        if oauth, let id = value["addedId"].string { showSignIn(id) }
                     } catch {
                         app.showToast(BotErrorText.text(error.localizedDescription), tone: .warning)
                     }

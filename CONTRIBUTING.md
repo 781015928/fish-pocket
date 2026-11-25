@@ -14,7 +14,7 @@ scripts/build-git-addon.sh
 (cd engine && npm ci && npm test)
 ```
 
-测试在宿主机的 Node 24 上运行，git 测试会用系统的 git 对照输出。
+测试在宿主机的 Node 24 上运行，git 测试会用系统的 git 对照输出。`npm test` 与打包都会对锁定的 DS Bot 和生图插件应用 `engine/patches/` 下的适配。直接运行单项测试前可执行 `bash scripts/patch-connector-plugins.sh engine/node_modules`。
 
 iOS 部分的改动请至少在模拟器上跑一遍，并在 PR 里写明测过什么、没测什么。模拟器能创建进程而真机不能，涉及进程的改动要确认走的是模拟层，不能只看模拟器结果。
 

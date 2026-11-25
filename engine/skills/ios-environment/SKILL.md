@@ -22,6 +22,8 @@ Anything not listed here should be assumed missing.
 - **Network:** `curl`
 - **Development:** `git node pnpm pnpx`
 - **Video and audio:** `ffmpeg ffprobe` (see the Video and audio section below)
+- **Workbench browser:** `browser` (load the browser-cli skill for usage)
+- **Image inspiration:** `inspiration` (load the image-tools skill for usage)
 - **Links:** `open xdg-open` hand a URL to the phone, so code that opens the system browser (a plugin's sign-in, a CLI's docs link) works. URLs only, the same schemes as the open_url tool; a file path fails. To take the user somewhere yourself, use that tool
 - **Shell:** `bash sh env printenv which type command date sleep timeout time xargs yes true false expr whoami hostname pwd history alias unalias clear help`
 
@@ -123,9 +125,9 @@ The app's native interface, built in SwiftUI, does not run a plugin's browser co
 
 **Before writing, changing or diagnosing a DSH plugin, read `references/plugins.md`**: what reaches which interface, what to tell the user before building, the built-in DS Bot and image generation plugins, and why device capabilities are not for plugins.
 
-**Image generation is built in** (the `dsh-image-gen` plugin): `generate_image`, `generate_images`, `edit_image` and `find_inspiration`. The user picks providers, saves API keys and signs in to ChatGPT, Grok or Google subscriptions under the app's Settings → 生图 (Image Generation), the top row of the 探索 (Explore) tab (at the bottom of the sidebar on an iPad before iOS 18); a tool error naming "Settings > Plugins > Image generation" means that page. The user can mark up a picture from the conversation (标注 in the image viewer) and send the marked copy. Its canvas, gallery and Studio are only in the web version.
+Load `image-tools` for generation, image edits and inspiration. Use `web-canvas` for a selection on this conversation's web workbench canvas. Native chat markups arrive as image attachments.
 
-Services the user has connected under 连接器 (Connectors) on the app's 探索 (Explore) tab (in the sidebar on an iPad before iOS 18) (GitHub, Notion and the like) are MCP tools in every session, named `mcp__<id>__*`. If a task needs one you do not have, ask the user to connect it there; you cannot connect one yourself.
+Use `connector_search` to find an action on a connected service by service, task or exact tool name. Select an exact name when it returns several candidates. For MCP resources search for `resources:<server>`. If the service is missing, the user can connect it in Explore → Connectors.
 
 ## git
 
@@ -157,7 +159,7 @@ Services the user has connected under 连接器 (Connectors) on the app's 探索
 
 ## Device capabilities
 
-You have tools onto the phone itself. They are not shell commands: `device_info`, `notify`, `open_url`, `text_analysis`, `maps`, `image_analysis`, `clipboard`, `location`, `calendar`, `reminders`, `transcribe_audio`, `health`, `photos`, `homekit`, `alarm`, `contacts`, `compose`, `files`, `music`, `weather`, `browser`. **Before using one for the first time in a session, read `references/device-capabilities.md`**: which tool fits which request, what each returns, how writes and permissions work, and what is not built.
+Use `connector_search` for the phone's calendar, photos, reminders and other device capabilities. A unique match makes the original typed tool available on the next step. See `references/device-capabilities.md` for the available operations and platform details.
 
 Three rules hold even before you read it:
 
@@ -185,7 +187,7 @@ Rules that hold even before you read it:
 
 ## Web browser
 
-The `browser` tool drives this conversation's own browser: real WebKit pages, the ones the user sees under Workbench → Browser. JavaScript runs, so use it where `curl` falls short — pages that render with scripts, logins, forms, anything that takes several clicks — and to look at a site you are building: start its server, then `open` it on `localhost:<port>`.
+Load `browser-cli` to use the conversation's workbench browser through bash. For advanced actions or inline images, discover the original `browser` tool by exact name. Its actions are described below.
 
 - `open` and every action return the page as text, with each element you can act on numbered like `[3]`. Pass that number as `index`. Numbers change whenever the page does, so use the ones from the latest result.
 - `screenshot` shows the visible part of the page as an image (`fullPage: true` for all of it): use it for layout, pictures and charts, not to read text. It needs a model that takes images; on one that does not it is refused, and `evaluate` can measure what you need instead.

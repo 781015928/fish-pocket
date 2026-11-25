@@ -1,0 +1,240 @@
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1,3 +1,4 @@
++// Modified by Fish Pocket: bind canvas selections to their calling conversation; the host also supports exact inspiration IDs.
+ import { createRequire } from "node:module";
+ import { createHash, randomBytes, randomUUID } from "node:crypto";
+ import { Context, Service } from "@deepseek-ai/cordis";
+@@ -6533,25 +6534,28 @@
+ 	* still view them while unrelated canvas edits keep flowing in.
+ 	*/
+ 	apply(push, selectionImage) {
++		if (!push.sessionId) return;
++		const instance = JSON.stringify([push.sessionId, push.clientInstance]);
+ 		for (const [id, item] of this.sequences) if (Date.now() - item.receivedAt > 3e5) this.sequences.delete(id);
+ 		if (push.sequence !== void 0) {
+-			if (push.sequence <= (this.sequences.get(push.clientInstance)?.value ?? -1)) return;
+-			this.sequences.set(push.clientInstance, {
++			if (push.sequence <= (this.sequences.get(instance)?.value ?? -1)) return;
++			this.sequences.set(instance, {
+ 				value: push.sequence,
+ 				receivedAt: Date.now()
+ 			});
+ 		}
+ 		if (!push.connected) {
+-			this.entries.delete(push.clientInstance);
++			this.entries.delete(instance);
+ 			return;
+ 		}
+-		const previous = this.entries.get(push.clientInstance);
++		const previous = this.entries.get(instance);
+ 		const selectionCount = push.selection?.count ?? 0;
+ 		const selectionKinds = [...push.selection?.kinds ?? []];
+ 		const selectionItems = [...push.selection?.items ?? []];
+ 		const selectionSignature = push.selectionRevision === void 0 ? signatureOf(selectionCount, selectionKinds, selectionItems) : JSON.stringify([push.selectionRevision, selectionCount]);
+ 		const keepImage = push.selectionStatus !== "preparing" && previous !== void 0 && previous.selectionSignature === selectionSignature ? previous.selectionImage : void 0;
+-		this.entries.set(push.clientInstance, {
++		this.entries.set(instance, {
++			sessionId: push.sessionId,
+ 			clientInstance: push.clientInstance,
+ 			connected: true,
+ 			nodeCount: push.nodeCount,
+@@ -6568,7 +6572,17 @@
+ 			updatedAt: push.updatedAt
+ 		});
+ 	}
+-	/** The freshest connected canvas entry, or undefined. */
++	/** Snapshot only the editors this conversation owns, including across async attachment saving. */
++	forSession(sessionId) {
++		const snapshot = new CanvasMirror();
++		if (sessionId) {
++			for (const [key, entry] of this.entries) {
++				if (entry.sessionId === sessionId) snapshot.entries.set(key, entry);
++			}
++		}
++		return snapshot;
++	}
++	/** The freshest connected canvas entry in this mirror. */
+ 	latest() {
+ 		return freshestEntry(this.entries.values());
+ 	}
+@@ -6897,6 +6911,7 @@
+ 	const record = plainRecord(value);
+ 	if (record === void 0) throw new InvalidPush();
+ 	const clientInstance = boundedString(record.clientInstance, 1, MAX_CLIENT_INSTANCE_CHARS);
++	const sessionId = optionalBoundedString(record.sessionId, MAX_ID_CHARS);
+ 	if (clientInstance === void 0) throw new InvalidPush();
+ 	if (typeof record.connected !== "boolean") throw new InvalidPush();
+ 	if (!nonNegativeInteger(record.nodeCount) || record.nodeCount > MAX_NODE_COUNT) throw new InvalidPush();
+@@ -6953,6 +6968,7 @@
+ 	if (record.sequence !== void 0 && (!nonNegativeInteger(record.sequence) || !Number.isSafeInteger(record.sequence))) throw new InvalidPush();
+ 	return {
+ 		clientInstance,
++		sessionId,
+ 		connected: record.connected,
+ 		nodeCount: record.nodeCount,
+ 		...nodes === void 0 ? {} : { nodes },
+@@ -7127,14 +7143,15 @@
+ 				text: value.digest
+ 			}]
+ 		},
+-		async execute() {
+-			const entry = mirror.latest();
++		async execute(_args, exec) {
++			const canvas = mirror.forSession(exec?.agent?.session?.id);
++			const entry = canvas.latest();
+ 			return {
+-				digest: mirror.digest(),
++				digest: canvas.digest(),
+ 				connected: entry !== void 0,
+ 				nodeCount: entry?.nodeCount ?? 0,
+ 				selectionCount: entry?.selectionCount ?? 0,
+-				hasSelectionImage: mirror.latestSelectionImage() !== void 0
++				hasSelectionImage: canvas.latestSelectionImage() !== void 0
+ 			};
+ 		}
+ 	}));
+@@ -7194,11 +7211,12 @@
+ 				}];
+ 			}
+ 		},
+-		async execute() {
+-			const image = mirror.latestSelectionImage();
++		async execute(_args, exec) {
++			const canvas = mirror.forSession(exec?.agent?.session?.id);
++			const image = canvas.latestSelectionImage();
+ 			const attachment = image === void 0 ? void 0 : await deps.persistSelectionImage(image);
+ 			return {
+-				digest: mirror.digest(),
++				digest: canvas.digest(),
+ 				...attachment === void 0 ? {} : { attachment: attachmentMeta$1(attachment) }
+ 			};
+ 		}
+@@ -30111,6 +30129,7 @@
+ 	for (const source of catalog.sources) {
+ 		if (request.sourceId !== void 0 && source.id !== request.sourceId) continue;
+ 		for (const item of source.cases) {
++			if (request.caseId !== void 0 && item.id !== request.caseId) continue;
+ 			if (request.category !== void 0 && item.category !== request.category) continue;
+ 			if (query !== "" && ![
+ 				item.title,
+@@ -32618,7 +32637,7 @@
+ 		promptCtx.effect(() => promptCtx.systemPrompt.context({
+ 			name: "dsh-image-gen:canvas",
+ 			order: 60,
+-			text: () => canvasMirror.digest()
++			text: ({ agent }) => canvasMirror.forSession(agent?.session?.id).digest()
+ 		}), "dsh-image-gen: canvas context");
+ 	});
+ 	registerCanvasTools(ctx, canvasMirror, { persistSelectionImage: (image) => ctx.attachments.saveImage({
+@@ -33238,7 +33257,7 @@
+ 			const canvasSelection = args.source === "canvas_selection";
+ 			if (canvasSelection && (args.source_attachment_id !== void 0 || Array.isArray(args.source_attachment_ids) || args.source_path !== void 0 || Array.isArray(args.source_paths))) throw new Error("edit_image source=canvas_selection cannot be combined with source_attachment_id, source_attachment_ids, source_path, or source_paths; provide exactly one selector");
+ 			const sourceImages = canvasSelection ? await resolveCanvasSelectionReferences({
+-				mirror: canvasMirror,
++				mirror: canvasMirror.forSession(exec.agent?.session?.id),
+ 				attachments: ctx.attachments,
+ 				...exec.agent === void 0 ? {} : { agent: exec.agent },
+ 				maxBytes: ctx.attachments.imageLimits.maxImageBytes,
+@@ -33397,6 +33416,7 @@
+ 		name: "find_inspiration",
+ 		description: "Search the bundled inspiration libraries for ready-made image prompts: the handdraw-style cookbook (styles 风格, layouts 排版, theme colors 单色) plus the awesome-gpt-image-2 example set. Use before generate_image whenever the user wants a specific art style, layout template, or theme color, mentions a numbered style like 风格 #123, or asks for reference or example prompts. Each hit carries a full prompt reusable with generate_image; handdraw style prompts contain a 主题 placeholder to replace with the user's topic, and may be combined with a layout and a theme-color prompt.",
+ 		parameters: {
++			id: { type: "string", description: "Exact case id from an inspiration search; use with source." },
+ 			query: {
+ 				type: "string",
+ 				description: "Keyword matched against titles, prompts, categories, and style/scene tags; Chinese or English. Omit to sample what a library offers."
+@@ -33464,6 +33484,7 @@
+ 			const { total, hits } = searchInspirationCases(BUNDLED_INSPIRATION_CATALOG, {
+ 				query: args.query ?? "",
+ 				sourceId: args.source,
++				caseId: args.id,
+ 				category: args.category,
+ 				limit: args.limit
+ 			});
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -1,3 +1,4 @@
++// Modified by Fish Pocket: bind canvas selections to their calling conversation; the host also supports exact inspiration IDs.
+ window.__ModuleLoader__.load({
+ 	id: "dsh-image-gen",
+ 	factory: (require) => {
+@@ -117680,7 +117681,8 @@
+ 			const ids = editor.getSelectedShapeIds().map(String).sort().join("|");
+ 			return ids.length === 0 ? "none" : ids;
+ 		}
+-		function startCanvasSync(editor, onStatus = () => {}) {
++		function startCanvasSync(editor, onStatus, ownerSession) {
++			if (!ownerSession) return Object.assign(() => {}, { retry() {} });
+ 			const clientInstance = `${String(editor.id).slice(0, 36)}-${Math.random().toString(36).slice(2, 10)}`;
+ 			let disposed = false;
+ 			let stateTimer;
+@@ -117742,6 +117744,7 @@
+ 				if (!force && key === lastPushKey) return;
+ 				const payload = {
+ 					clientInstance,
++					sessionId: ownerSession,
+ 					connected: true,
+ 					nodeCount: summary.nodeCount,
+ 					nodes: summary.nodes,
+@@ -117853,6 +117856,7 @@
+ 					keepalive: true,
+ 					body: JSON.stringify({
+ 						clientInstance,
++						sessionId: ownerSession,
+ 						connected: false,
+ 						nodeCount: 0,
+ 						sequence: ++sequence,
+@@ -118226,7 +118230,7 @@
+ 			return true;
+ 		}
+ 		const TL_COMPONENTS = { Toolbar: StudioToolbar };
+-		const StudioTlCanvas = (0, react.memo)(function StudioTlCanvas({ lang = "zh" }) {
++		const StudioTlCanvas = (0, react.memo)(function StudioTlCanvas({ lang = "zh", ownerSession }) {
+ 			const sessionId = (0, react.useId)();
+ 			const [syncStatus, setSyncStatus] = (0, react.useState)({
+ 				phase: "idle",
+@@ -118249,7 +118253,7 @@
+ 					setLandingError(false);
+ 					return landTlItems(editor, items, () => active && generation === getTlLandingGeneration(), () => setLandingError(true));
+ 				});
+-				let stopSync = startCanvasSync(editor, setSyncStatus);
++				let stopSync = startCanvasSync(editor, setSyncStatus, ownerSession);
+ 				retrySync.current = () => stopSync.retry();
+ 				const clear = () => {
+ 					setLandingError(false);
+@@ -118271,7 +118275,7 @@
+ 						ignoreShapeLock: true
+ 					});
+ 					editor.clearHistory();
+-					stopSync = startCanvasSync(editor, setSyncStatus);
++					stopSync = startCanvasSync(editor, setSyncStatus, ownerSession);
+ 				};
+ 				mountedCanvases.add(clear);
+ 				return () => {
+@@ -118954,7 +118958,7 @@
+ 			if (fresh !== void 0) return fresh;
+ 			return previousIds?.has(current.id) === true ? null : current;
+ 		}
+-		const StudioView = ({ locale, credentialEvents, workspace, initialPrompt, initialReference, initialCanvasSurface, showInfiniteCanvasHint, onInitialPromptApplied, onInitialReferenceApplied, onOpenInspiration }) => {
++		const StudioView = ({ locale, credentialEvents, workspace, ownerSession, initialPrompt, initialReference, initialCanvasSurface, showInfiniteCanvasHint, onInitialPromptApplied, onInitialReferenceApplied, onOpenInspiration }) => {
+ 			const [lang, setLang] = (0, react.useState)(() => locale?.getSnapshot?.().active?.startsWith("en") ? "en" : "zh");
+ 			const [config, setConfig] = (0, react.useState)(null);
+ 			const [configLoading, setConfigLoading] = (0, react.useState)(true);
+@@ -120455,7 +120459,7 @@
+ 											})
+ 										]
+ 									}),
+-									canvasSurface === "infinite" ? (0, react_jsx_runtime.jsx)(StudioTlCanvas, { lang }) : (0, react_jsx_runtime.jsx)("div", {
++									canvasSurface === "infinite" ? (0, react_jsx_runtime.jsx)(StudioTlCanvas, { lang, ownerSession }, ownerSession ?? "unbound") : (0, react_jsx_runtime.jsx)("div", {
+ 										className: `dsh-ig-canvas ${isDragging ? "is-dragging" : ""}`,
+ 										ref: canvasRef,
+ 										onMouseDown: handleCanvasMouseDown,
+@@ -127196,6 +127200,7 @@
+ 							onUsePrompt: useInspirationPrompt,
+ 							onUseReference: useInspirationReference
+ 						}) : (0, react_jsx_runtime.jsx)(StudioView, {
++							ownerSession: sessionId,
+ 							locale,
+ 							credentialEvents,
+ 							workspace: activeWorkspace,

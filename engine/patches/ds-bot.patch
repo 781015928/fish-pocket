@@ -1,0 +1,342 @@
+--- a/src/host/connectors/index.js
++++ b/src/host/connectors/index.js
+@@ -1,3 +1,4 @@
++// Modified by Fish Pocket: custom OAuth connections and per-Bot connector admission.
+ // Connectors: outside services every Bot can use. One engine mounts each
+ // connected service's MCP server on the plugin context through the local
+ // gateway (gateway.js), so every Bot gets mcp__<id>__* tools while credentials
+@@ -56,10 +57,21 @@
+   const gateways = { gw: null }
+   const pluginP = { p: null }
+ 
++  // A profile created before OAuth-on-custom-connectors has no custom.auth field.
++  const customEntry = (id, custom) => ({
++    id, name: custom.name, category: 'custom', about: custom.url ?? custom.command ?? '', custom,
++    auth: { kind: custom.auth?.kind === 'oauth' ? 'oauth' : 'custom' },
++    ...(custom.auth?.kind === 'oauth' ? { remote: { url: custom.url } } : {}),
++  })
++  const customAuth = (auth, url) => {
++    if (auth === undefined) return {}
++    if (auth?.kind !== 'oauth' || typeof url !== 'string' || insecure(url)) throw new Error('OAuth connectors need an HTTPS MCP address')
++    return { auth: { kind: 'oauth', vaultId: 'oauth-' + randomBytes(12).toString('hex') } }
++  }
+   const entries = () => {
+     const list = [...CATALOG.filter(entry => entry.id !== 'github' || options !== null)]
+     for (const [id, saved] of Object.entries(state.connectors ?? {})) {
+-      if (saved?.custom) list.push({ id, name: saved.custom.name, category: 'custom', about: saved.custom.url ?? saved.custom.command ?? '', auth: { kind: 'custom' }, custom: saved.custom })
++      if (saved?.custom) list.push(customEntry(id, saved.custom))
+     }
+     return list
+   }
+@@ -71,7 +83,7 @@
+     }
+     if (catalog !== undefined) return catalog
+     const custom = state.connectors?.[id]?.custom
+-    if (custom !== undefined) return { id, name: custom.name, category: 'custom', about: custom.url ?? custom.command ?? '', auth: { kind: 'custom' }, custom }
++    if (custom !== undefined) return customEntry(id, custom)
+     return undefined
+   }
+   const known = (id) => {
+@@ -83,12 +95,21 @@
+ 
+   // --- credentials ------------------------------------------------------
+ 
++  // A user-chosen display id is not proof of a grant. New custom OAuth connections
++  // own a separate vault namespace and are usable only after consent to this URL.
++  const isCustomOAuth = entry => entry?.custom?.auth?.kind === 'oauth'
++  const vaultId = entry => isCustomOAuth(entry) ? entry.custom.auth.vaultId : entry.id
++  const currentGrant = entry => !isCustomOAuth(entry) || (
++    typeof vaultId(entry) === 'string' && state.connectors?.[entry.id]?.custom?.auth?.vaultId === vaultId(entry)
++    && state.connectors[entry.id].custom.url === entry.custom.url
++  )
+   const credentialOf = (id) => {
+     const entry = entryFor(id)
+     if (entry === undefined) return undefined
+     if (entry.auth.kind === 'none' || entry.auth.kind === 'custom') return {}
+     if (entry.auth.kind === 'oauth') {
+-      const token = rt.secretValue(tokenSecretOf(id))
++      if (isCustomOAuth(entry) && (!currentGrant(entry) || state.connectors[id].authorizedUrl !== entry.custom.url)) return undefined
++      const token = rt.secretValue(tokenSecretOf(vaultId(entry)))
+       return token === undefined ? undefined : { Authorization: `Bearer ${token}` }
+     }
+     if (entry.auth.kind === 'key') {
+@@ -100,7 +121,7 @@
+   const hasCredential = (id) => {
+     const entry = entryFor(id)
+     if (entry === undefined) return false
+-    if (entry.custom !== undefined) return true
++    if (entry.auth.kind === 'custom') return true
+     if (entry.auth.kind === 'none') return state.connectors?.[id] !== undefined
+     return credentialOf(id) !== undefined
+   }
+@@ -124,6 +145,7 @@
+     }
+     if (entry.custom !== undefined) {
+       for (const [name, raw] of Object.entries(entry.custom.headers ?? {})) {
++        if (entry.auth.kind === 'oauth' && name.toLowerCase() === 'authorization') continue
+         headers[name] = String(raw).replace(SECRET_REF, (_m, n) => rt.secretValue(n) ?? '')
+       }
+     }
+@@ -241,12 +263,15 @@
+   // --- OAuth sign-in ----------------------------------------------------
+ 
+   const finishTokens = async (id, entry, tokens) => {
+-    await writeSecret(tokenSecretOf(id), tokens.access_token, `${entry.name} connector`)
++    const owner = vaultId(entry)
++    if (!currentGrant(entry)) return
++    await writeSecret(tokenSecretOf(owner), tokens.access_token, `${entry.name} connector`)
+     if (typeof tokens.refresh_token === 'string' && tokens.refresh_token !== '') {
+-      await writeSecret(refreshSecretOf(id), tokens.refresh_token, `${entry.name} connector`).catch(() => {})
++      await writeSecret(refreshSecretOf(owner), tokens.refresh_token, `${entry.name} connector`).catch(() => {})
+     }
+     const account = await readAccount(id, entry, tokens.access_token).catch(() => undefined)
+-    await saveState(id, { account, connectedAt: Date.now(), tokenExpiresAt: Number.isFinite(tokens.expires_in) ? Date.now() + tokens.expires_in * 1000 : undefined })
++    if (!currentGrant(entry)) { await dropSecrets(owner); return }
++    await saveState(id, { account, ...(isCustomOAuth(entry) ? { authorizedUrl: entry.custom.url } : {}), connectedAt: Date.now(), tokenExpiresAt: Number.isFinite(tokens.expires_in) ? Date.now() + tokens.expires_in * 1000 : undefined })
+   }
+ 
+   async function readAccount(id, entry, token) {
+@@ -304,15 +329,19 @@
+       ? await loopback(({ code, state, iss, error, errorDescription }) => completeBrowser(id, { code, state, iss, error, errorDescription }))
+       : pending
+     const { listener, fixed, redirectUri } = bound
+-    pendings.set(id, { ...pending, listener, fixed, redirectUri })
++    const attempt = { ...pending, listener, fixed, redirectUri }
++    pendings.set(id, attempt)
+     try {
+       const saved = state.connectors?.[id]
+       const persist = async (client) => {
+         const { clientSecret, ...rest } = client
+-        if (clientSecret !== undefined) await writeSecret(clientSecretOf(id), clientSecret, `${entry.name} connector`)
++        if (!currentGrant(entry)) throw new Error('This connection has changed')
++        if (clientSecret !== undefined) await writeSecret(clientSecretOf(vaultId(entry)), clientSecret, `${entry.name} connector`)
++        if (!currentGrant(entry)) throw new Error('This connection has changed')
+         await saveState(id, { client: rest })
+       }
+-      const resolved = await oauth.resolveClient(entry, pending.discovery, redirectUri, fixed, saved?.client ? { ...saved.client, clientSecret: rt.secretValue(clientSecretOf(id)) } : undefined, { persist })
++      const resolved = await oauth.resolveClient(entry, pending.discovery, redirectUri, fixed, saved?.client ? { ...saved.client, clientSecret: rt.secretValue(clientSecretOf(vaultId(entry))) } : undefined, { persist })
++      if (pendings.get(id) !== attempt || !currentGrant(entry)) return
+       if (resolved === null) {
+         statuses.set(id, { state: 'needs-client' })
+         return
+@@ -321,6 +350,7 @@
+       if (resolved.via !== 'dcr') await saveState(id, { client: { via: resolved.via, clientId: resolved.clientInformation.client_id } })
+       const stateParam = randomBytes(16).toString('base64url')
+       const { url, codeVerifier } = await oauth.beginBrowser(pending.discovery, resolved.clientInformation, redirectUri, { state: stateParam })
++      if (pendings.get(id) !== attempt || !currentGrant(entry)) return
+       pendings.set(id, {
+         ...pending, kind: 'browser', listener, fixed, redirectUri, codeVerifier, expectedState: stateParam,
+         clientInformation: resolved.clientInformation,
+@@ -346,10 +376,13 @@
+       if (result.state !== pending.expectedState) throw new Error('The sign-in answer did not match this attempt (state mismatch). Try again.')
+       const entry = entryFor(id)
+       const tokens = await oauth.exchange(pending.discovery, pending.clientInformation, { code: result.code, codeVerifier: pending.codeVerifier, redirectUri: pending.redirectUri, iss: result.iss ?? undefined })
++      if (pendings.get(id) !== pending || !currentGrant(entry)) return
++      await finishTokens(id, entry, tokens)
++      if (pendings.get(id) !== pending) return
+       await endPending(id)
+-      await finishTokens(id, entry, tokens)
+       await sync(true)
+     } catch (error) {
++      if (pendings.get(id) !== pending) return
+       await endPending(id, { state: 'error', error: reason(error) })
+     }
+   }
+@@ -402,8 +435,14 @@
+       const remote = entry.remote?.url
+       if (remote === undefined) throw new Error('This connector has no server address')
+       if (insecure(remote)) throw new Error('Connector addresses must start with https://')
+-      const discovery = await oauth.discover(remote)
++      const discovery = await oauth.discover(remote, { strictIssuer: entry.custom !== undefined })
+       if (discovery.metadata === undefined) throw new Error('This service does not publish OAuth sign-in metadata')
++      if (!currentGrant(entry)) return
++      const prior = state.connectors?.[id]
++      if (isCustomOAuth(entry) && ((prior.authorizedUrl && prior.authorizedUrl !== remote) || (prior.oauth &&
++        (prior.oauth.authorizationServerUrl !== discovery.authorizationServerUrl || prior.oauth.resource !== discovery.resource)))) {
++        throw new Error('The OAuth issuer or resource changed. Disconnect or remove this connector before signing in again.')
++      }
+       state.connectors = { ...(state.connectors ?? {}), [id]: { ...state.connectors?.[id], oauth: { authorizationServerUrl: discovery.authorizationServerUrl, resource: discovery.resource, scope: discovery.scope } } }
+       await rt.save()
+       await startBrowserFlow(id, entry, { discovery })
+@@ -423,7 +462,10 @@
+         await rt.loadSecrets()
+         return false
+       }
+-      const refresh = rt.secretValue(refreshSecretOf(id))
++      const entry = entryFor(id)
++      if (!entry || !currentGrant(entry) || (isCustomOAuth(entry) && saved.authorizedUrl !== entry.custom.url)) return false
++      const owner = vaultId(entry)
++      const refresh = rt.secretValue(refreshSecretOf(owner))
+       let path = saved?.client?.via ?? 'inferred'
+       if (refresh === undefined || saved?.oauth === undefined) {
+         statuses.set(id, { state: 'needs-sign-in' })
+@@ -432,6 +474,7 @@
+       }
+       try {
+         const discovery = await oauth.rediscover(saved.oauth)
++        if (isCustomOAuth(entry) && !discovery.metadata) throw new Error('Cannot verify the OAuth issuer to refresh this connection')
+         // Refresh with the client that signed in: catalog → the current catalog id,
+         // CIMD → the published document id, DCR/manual → the stored id (+ secret).
+         // Rows signed in before clients were persisted have no `client`: fall back to
+@@ -447,15 +490,17 @@
+           rt.warn('ds-bot: connector %s token refresh failed (client: %s; no OAuth client)', id, path)
+           return false
+         }
+-        const secret = rt.secretValue(clientSecretOf(id))
++        const secret = rt.secretValue(clientSecretOf(owner))
+         const client = { client_id: clientId, ...(secret !== undefined ? { client_secret: secret } : {}) }
+         const tokens = await oauth.refreshTokens(discovery, client, refresh, { scope: saved.oauth.scope })
+         const purpose = `${entryFor(id)?.name ?? id} connector`
+-        await writeSecret(tokenSecretOf(id), tokens.access_token, purpose)
++        if (!currentGrant(entry)) return false
++        await writeSecret(tokenSecretOf(owner), tokens.access_token, purpose)
+         if (typeof tokens.refresh_token === 'string' && tokens.refresh_token !== '' && tokens.refresh_token !== refresh) {
+           // Rotation: the old refresh token stays if this write fails.
+-          await writeSecret(refreshSecretOf(id), tokens.refresh_token, purpose).catch(() => {})
++          await writeSecret(refreshSecretOf(owner), tokens.refresh_token, purpose).catch(() => {})
+         }
++        if (!currentGrant(entry)) { await dropSecrets(owner); return false }
+         await saveState(id, {
+           client: { ...saved.client, via: clientVia, clientId },
+           tokenExpiresAt: Number.isFinite(tokens.expires_in) ? Date.now() + tokens.expires_in * 1000 : undefined,
+@@ -464,6 +509,7 @@
+         rt.warn('ds-bot: connector %s token refresh succeeded (client: %s)', id, path)
+         return true
+       } catch (error) {
++        if (!currentGrant(entry)) return false
+         if (oauth.invalidGrant(error)) statuses.set(id, { state: 'needs-sign-in', error: 'Sign in again' })
+         else statuses.set(id, { state: 'error', error: reason(error) })
+         rt.warn('ds-bot: connector %s token refresh failed (client: %s; %s)', id, path, oauth.invalidGrant(error) ? 'invalid_grant' : 'refresh error')
+@@ -565,6 +611,8 @@
+   }))
+ 
+   const offFor = id => state.connectors?.[id]?.offFor ?? []
++  // Resource tools take a server argument. Apply the same live per-Bot switch as named actions.
++  ctx.tools.registerConnectorAccess?.((agent, server) => !offFor(server).includes(rt.selfOf(agent.session.id)))
+ 
+   // --- import -------------------------------------------------------------
+ 
+@@ -669,6 +717,7 @@
+       }
+       const token = typeof body.token === 'string' ? body.token.trim() : ''
+       if (token !== '') {
++        if (isCustomOAuth(entry)) throw new Error('Use OAuth sign-in for this connector')
+         const remote = entry.remote?.url
+         if (remote !== undefined && insecure(remote)) throw new Error('Connector addresses must start with https://')
+         if (entry.id === 'github' && options?.api !== undefined && insecure(options.api)) throw new Error('GitHub addresses must start with https://')
+@@ -688,10 +737,17 @@
+     async 'connector-disconnect'(body) {
+       const entry = known(body.id)
+       await endPending(entry.id)
+-      await dropSecrets(entry.id)
++      if (!entry.custom) await dropSecrets(entry.id)
+       if (state.connectors?.[entry.id] !== undefined) {
+-        delete state.connectors[entry.id]
++        if (entry.custom?.auth?.kind === 'oauth') {
++          const saved = state.connectors[entry.id]
++          state.connectors[entry.id] = { custom: { ...entry.custom, ...customAuth({ kind: 'oauth' }, entry.custom.url) }, offFor: saved.offFor, readOnly: saved.readOnly }
++        } else delete state.connectors[entry.id]
+         await rt.save()
++      }
++      if (isCustomOAuth(entry)) {
++        await refreshes.get(entry.id)
++        if (vaultId(entry)) await dropSecrets(vaultId(entry))
+       }
+       gateways.gw?.forget(entry.id)
+       await sync()
+@@ -732,7 +788,7 @@
+       const clientId = String(body.clientId ?? '').trim()
+       if (clientId === '') throw new Error('Enter the client ID')
+       const clientSecret = typeof body.clientSecret === 'string' && body.clientSecret.trim() !== '' ? body.clientSecret.trim() : undefined
+-      if (clientSecret !== undefined) await writeSecret(clientSecretOf(entry.id), clientSecret, `${entry.name} connector`)
++      if (clientSecret !== undefined) await writeSecret(clientSecretOf(vaultId(entry)), clientSecret, `${entry.name} connector`)
+       await saveState(entry.id, { client: { via: 'manual', clientId } })
+       const pending = pendings.get(entry.id)
+       if (pending !== undefined && pending.discovery !== undefined) {
+@@ -756,20 +812,25 @@
+       const command = typeof body.command === 'string' ? body.command.trim() : undefined
+       if (url !== undefined && insecure(url) && !/^http:\/\/(localhost|127\.)/i.test(url)) throw new Error('Connector addresses must start with https://')
+       if (url === undefined && command === undefined) throw new Error('Enter an address or a command')
++      const auth = customAuth(body.auth, url)
+       const taken = new Set(Object.keys(state.connectors ?? {}))
+       const id = customId(name, taken)
+       CONNECTOR_IDS.add(id)
+       const custom = url !== undefined
+-        ? { name, url, headers: body.headers && typeof body.headers === 'object' ? body.headers : {} }
++        ? { name, url, ...auth, headers: body.headers && typeof body.headers === 'object' ? body.headers : {} }
+         : { name, command, args: Array.isArray(body.args) ? body.args.map(String) : [], env: body.env && typeof body.env === 'object' ? body.env : {} }
+-      await saveState(id, { custom, connectedAt: Date.now() })
++      await saveState(id, { custom, ...(custom.auth ? {} : { connectedAt: Date.now() }) })
+       await sync(true)
+-      return connectorsView()
++      return { ...connectorsView(), addedId: id }
+     },
+     async 'connector-remove'(body) {
+       const entry = known(body.id)
+       if (entry.custom === undefined) throw new Error('Only added connectors can be removed')
+       await endpoints['connector-disconnect']({ id: entry.id })
++      if (state.connectors?.[entry.id]) {
++        delete state.connectors[entry.id]
++        await rt.save()
++      }
+       return connectorsView()
+     },
+     async 'connector-import-scan'() {
+@@ -781,7 +842,7 @@
+       for (const { name, spec } of picked) {
+         const taken = new Set(Object.keys(state.connectors ?? {}))
+         const id = customId(name, taken)
+-        const custom = { name }
++        const custom = { name, ...customAuth(spec.auth?.kind === 'oauth' ? spec.auth : undefined, spec.url ?? spec.serverUrl) }
+         if (typeof spec.url === 'string' || typeof spec.serverUrl === 'string') {
+           custom.url = spec.url ?? spec.serverUrl
+           custom.headers = {}
+@@ -800,7 +861,7 @@
+             custom.env[envName] = `$DSH_SECRET_${secretName}`
+           }
+         } else continue
+-        await saveState(id, { custom, connectedAt: Date.now() })
++        await saveState(id, { custom, ...(custom.auth ? {} : { connectedAt: Date.now() }) })
+         created.push(id)
+       }
+       await sync(true)
+--- a/src/host/connectors/oauth.js
++++ b/src/host/connectors/oauth.js
+@@ -1,3 +1,4 @@
++// Modified by Fish Pocket: custom OAuth connections and per-Bot connector admission.
+ // OAuth sign-in for connectors, on the official MCP SDK auth helpers. Discovery:
+ // an unauthenticated request → 401 WWW-Authenticate → protected-resource
+ // metadata (well-known fallback; AS metadata on the MCP origin for older
+@@ -6,6 +7,7 @@
+   discoverOAuthProtectedResourceMetadata,
+   discoverAuthorizationServerMetadata,
+   extractWWWAuthenticateParams,
++  selectResourceURL,
+   startAuthorization,
+   exchangeAuthorization,
+   refreshAuthorization,
+@@ -25,7 +27,7 @@
+ }
+ 
+ // Probes the MCP server and resolves the authorization server and its metadata.
+-export async function discover(serverUrl, { fetch: request = fetch, originFallback = true } = {}) {
++export async function discover(serverUrl, { fetch: request = fetch, originFallback = true, strictIssuer = false } = {}) {
+   const send = timed(request)
+   https(serverUrl, 'Connector')
+   let challenge = {}
+@@ -37,13 +39,14 @@
+   try {
+     resourceMetadata = await discoverOAuthProtectedResourceMetadata(serverUrl, { resourceMetadataUrl: challenge.resourceMetadataUrl }, send)
+   } catch { resourceMetadata = undefined }
++  if (strictIssuer && resourceMetadata) await selectResourceURL(serverUrl, {}, resourceMetadata)
+   // Older servers publish AS metadata on the MCP origin with no protected-resource doc.
+   const asUrl = resourceMetadata?.authorization_servers?.[0] ?? (originFallback ? new URL(serverUrl).origin : serverUrl)
+   let metadata
+   try {
+     metadata = await discoverAuthorizationServerMetadata(asUrl, { fetchFn: send })
+   } catch (error) {
+-    if (error instanceof IssuerMismatchError) metadata = await discoverAuthorizationServerMetadata(asUrl, { fetchFn: send, skipIssuerValidation: true }).catch(() => undefined)
++    if (!strictIssuer && error instanceof IssuerMismatchError) metadata = await discoverAuthorizationServerMetadata(asUrl, { fetchFn: send, skipIssuerValidation: true }).catch(() => undefined)
+   }
+   const scope = challenge.scope ?? resourceMetadata?.scopes_supported?.join(' ')
+   return {

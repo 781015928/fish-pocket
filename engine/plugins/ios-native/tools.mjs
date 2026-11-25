@@ -7,6 +7,10 @@ import { defineTool } from '@deepseek-ai/dsh-tools';
 import { describe, invoke as invokeNative } from './binding.mjs';
 import { ENGINE_CLAIM } from './caller.mjs';
 
+// A persisted DSH header has no connection identity. Only shipped, stable actions
+// can be restored by matching their saved schema; an external provider must be rediscovered.
+export const DEVICE_ACTION = Symbol('Fish Pocket device definition');
+
 // These are the engine's own tools, so every call from here claims the engine.
 // It is still only a claim — nothing downstream treats it as proof.
 const invoke = (capability, op, args) => invokeNative(capability, op, args, ENGINE_CLAIM);

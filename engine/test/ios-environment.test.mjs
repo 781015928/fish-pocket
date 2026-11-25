@@ -28,7 +28,7 @@ test('every command listed as existing exists', () => {
   // Shell builtins are not commands of the world.
   const builtin = new Set(['type', 'command']);
   // FFmpeg and open (the native addon) exist in the app only: a development machine has no binding for them.
-  const appOnly = new Set([...FFMPEG_COMMANDS, ...OPEN_COMMANDS]);
+  const appOnly = new Set([...FFMPEG_COMMANDS, ...OPEN_COMMANDS, 'browser']);
   assert.deepEqual(listed.filter((name) => !COMMANDS.has(name) && !builtin.has(name) && !appOnly.has(name)), []);
 });
 

@@ -11,7 +11,18 @@
 import { Service } from '@deepseek-ai/cordis';
 import { capabilities, invoke } from './binding.mjs';
 import { callerClaim } from './caller.mjs';
-import { TOOLS } from './tools.mjs';
+import { DEVICE_ACTION, TOOLS } from './tools.mjs';
+
+// Extra search terms for the local directory; only matches reach the model.
+const keywords = {
+  calendar: '日历 日程 行程 空闲', reminders: '提醒事项 待办', photos: '照片 相片 相册 图库',
+  notify: '通知 提醒', alarm: '闹钟 闹铃', device: '设备状态 电量', open: '打开 链接',
+  maps: '地图 导航 路线', location: '定位 位置 地址', weather: '天气 预报',
+  contacts: '联系人 通讯录', compose: '邮件 短信', files: '文件 选择 导出',
+  clipboard: '剪贴板 粘贴板', browser: '浏览器 网页 截图', vision: '图像 识别 OCR',
+  nlp: '文本 分析', transcribe: '音频 转写', homekit: '家庭 智能家居',
+  music: '音乐 播放', health: '健康 步数',
+};
 
 /**
  * `ctx.iosNative` — the same path the engine's own tools take.
@@ -87,7 +98,10 @@ export default function IosNative(ctx) {
     for (const [capability, tool] of Object.entries(TOOLS)) {
       if (available[capability] === undefined) continue;
       const definition = typeof tool === 'function' ? tool(toolsCtx) : tool;
-      toolsCtx.effect(() => toolsCtx.tools.register(definition), `ios-native ${capability} tool`);
+      toolsCtx.tools.register(definition, {
+        [DEVICE_ACTION]: true,
+        discovery: { connection: 'device', keywords: capability + ' ' + (keywords[capability] ?? '') },
+      });
     }
     toolsCtx.logger.info('native capabilities: %s', Object.keys(available).join(', '));
   });

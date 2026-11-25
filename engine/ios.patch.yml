@@ -10,6 +10,12 @@
 # inside an app). bash-sandbox and permission presets stay as shipped.
 - id: sandbox
   disabled: true
+# Keep the upstream registry, dispatch and resource providers, with step-time
+# admission for device tools, connected MCP servers and media Skills.
+- id: tools
+  disabled: true
+- id: mcp-resources
+  disabled: true
 
 # New sessions start in full access, but not from here: this overlay sits above
 # the layer 设置 writes, so a value set here could not be changed there. The
@@ -97,6 +103,10 @@
     commandShield: false
 
 - insert:
+    - id: tools-ios
+      name: ./plugins/action-catalog/index.mjs
+    - id: mcp-resources-ios
+      name: ./plugins/action-catalog/resources.mjs
     - id: subprocess-ios
       name: ./plugins/subprocess-ios/index.mjs
     - id: sandbox-ios

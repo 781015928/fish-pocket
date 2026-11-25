@@ -141,7 +141,7 @@
 
 ## 浏览器能力
 
-Agent 用的 `browser` 工具有哪些动作、各要什么参数、给模型看的说明，全写在 `app/DshIOS/Browser/BrowserCatalog.swift` 一处：引擎按它生成工具（`describe`），原生层按它放行动作，参数也按它检查。
+会话默认通过 `browser-cli` Skill 和 Shell 操作工作台浏览器，复杂操作仍能经 `connector_search` 启用原工具。原 `browser` 工具有哪些动作、各要什么参数、给模型看的说明，全写在 `app/DshIOS/Browser/BrowserCatalog.swift` 一处：引擎按它生成工具（`describe`），原生层按它放行动作，参数也按它检查。
 
 - 加一个浏览器能力：在 `BrowserCatalog` 里登记动作和参数，在 `BrowserAgent.perform` 里接上实现（多数写在 `BrowserAbilities.swift`）。引擎的 `tools.mjs` 和 `caps_browser.m` 都不用改。
 - 返回值里带 `image: {data, mediaType}` 的，引擎会自动存成附件给模型看；会出图的动作在清单里标 `image`，引擎先确认模型能看图再执行。
@@ -319,6 +319,8 @@ iOS 18 起，iPhone、iPhone Duo、iPad 共用一套系统 `TabView`，样式是
 - **iOS 17 的 iPad 分栏详情栏里轮流出现的几个栈，路径要是同一种。**详情栏按状态放插件、Bot、会话三个栈之一，系统把它们当成同一个栈，换栈时会比较前后两个路径：Bot 栈带 `[BotRoute]` 路径、另两个不带路径时类型对不上，App 闪退（`AnyNavigationPath.Error.comparisonTypeMismatch`；在 Bot 页点侧边栏里另一条会话必现）。所以 Bot 栈在这里把路径包成 `NavigationPath` 交给系统（`MainView.botStackInSplit`）。路径同类之后，系统换栈时会把上一个栈里用链接推入的页面留下来（插件下级页盖在 Bot 列表上），所以换栈时先把详情栏退回根页（`SplitDetail.popToRoot`）。以后往详情栏里再加一个栈，也照这两条做，并在 iPadOS 17 上验证：Bot 页点另一条会话；插件下级页开着时点「Bot」。
 
 ## 连接器对谁生效
+
+设备和远端 MCP 动作在 `engine/plugins/action-catalog/` 登记，按当前会话发现后启用。生图和网页画布由各自的 Skill 启用。扩展接入与升级验证见 [动作目录](docs/action-catalog.md)。
 
 连接器的入口在「探索」页（iOS 17 的 iPad 上在侧边栏「插件」下面那一行），是全 App 的通用入口，Bot 团队设置里也留了同一个页面。原因是 ds-bot 把连上的服务挂成引擎级的 MCP 插件：普通会话和 Bot 都能用它的工具（`mcp__<id>__*`），「哪些 Bot 可以用」的开关只限制 Bot，管不到普通会话。连接服务、登录都走 ds-bot 的接口，Bot 插件没就绪时只有「本机能力」那一类能用。本机能力是连接器页里的一类，在那里直接开关；只选这一类时显示完整的本机能力页（隐私说明、使用记录、系统设置）。
 
