@@ -13,7 +13,7 @@ Use iCTRL only when nothing else can do the job. In order:
 
 If the user asks you to operate another app, check first whether one of the above already does it.
 
-## Is it there?
+## Check current status
 
 The service listens on `http://127.0.0.1:8200`, on this phone only.
 
@@ -21,9 +21,11 @@ The service listens on `http://127.0.0.1:8200`, on this phone only.
 curl -s -m 3 http://127.0.0.1:8200/whoami
 ```
 
-- **An answer** (JSON with the device id and version): it is running. Go on.
-- **No answer**: it is not running. Tell the user to open the iCTRL app and tap 启动服务 (Start Server), or use 操控手机 (Phone control) on the app's 探索 (Explore) tab (in the sidebar on an iPad before iOS 18). Then stop. Do not retry in a loop.
+- **JSON with the device id and version**: the service is reachable. If you only checked `/whoami`, say that this client's pairing is unconfirmed and that you cannot confirm app control yet.
+- **No valid response**: say the service is currently unreachable. Tell the user to open the iCTRL app and tap 启动服务 (Start Server), or use 操控手机 (Phone control) on the app's 探索 (Explore) tab (in the sidebar on an iPad before iOS 18). Then stop. Use the fresh probe result and leave installation and setup history unknown.
 - **The user starts it and it still fails, or the runner will not open**: see Troubleshooting below.
+
+For status-only requests, leave the service, pairing and other apps alone. Keep any further checks read-only and use the client already installed. Its local `call device_info` checks whether the service accepts this client's key without initiating pairing. If this client has no key for the device or gets `401`, say it needs pairing before it can operate apps. A stored key still needs authentication. Actual app control also requires an unlocked phone and any user approvals listed below.
 
 ## Using it
 

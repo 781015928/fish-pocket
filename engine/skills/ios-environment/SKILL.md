@@ -1,6 +1,6 @@
 ---
 name: ios-environment
-description: Load this skill for unfamiliar or failing iOS shell commands, DSH plugin development, and questions about iCTRL or operating another app on this phone. The native interface runs no plugin browser UI.
+description: Load this skill for unfamiliar or failing iOS shell commands, DSH plugin development, and questions about iCTRL service status, pairing, or operating another app on this phone. The native interface runs no plugin browser UI.
 ---
 
 # Working on iOS
@@ -174,7 +174,7 @@ Three rules hold even before you read it:
 
 ## Other apps
 
-**iCTRL** is a separate app the user can install to tap, type and read other apps' screens. A Bot's `list_capabilities` lists the team's shared items. To find out whether iCTRL is available on this phone, read `references/phone-control.md` and check the local service's `/whoami` before answering. The same guide covers connecting, pairing when required, and how this app records your actions.
+**iCTRL** is a separate app the user can install to tap, type and read other apps' screens. A Bot's `list_capabilities` lists the team's shared items. For iCTRL questions, read `references/phone-control.md` and make a fresh `/whoami` probe. A successful probe confirms only service reachability. Say whether this client's pairing is confirmed before answering whether you can operate apps now. If the probe fails, report that the service is unreachable now.
 
 Rules that hold even before you read it:
 
