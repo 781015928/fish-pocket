@@ -316,6 +316,12 @@ final class VoiceCall {
         audio.onInputLevel = { [weak self] value in Task { @MainActor in self?.levels.input = value } }
         audio.onOutputLevel = { [weak self] value in Task { @MainActor in self?.levels.output = value } }
         audio.onPlayed = { [weak self] tag in Task { @MainActor in self?.played(tag) } }
+        audio.onReminderStarted = { [weak self] id in
+            Task { @MainActor in
+                guard let self, !self.ended, self.reply == id else { return }
+                self.recordIdleQuestion()
+            }
+        }
         audio.onRoute = { [weak self] speaker, external in
             Task { @MainActor in
                 self?.speaker = speaker
@@ -640,6 +646,11 @@ final class VoiceCall {
         idleReminder = (requestId, Task { _ = await Self.post("said", body, client: client) })
     }
 
+    private func recordIdleQuestionIfHeard() {
+        guard idleQuestion != nil, let reply, audio?.hasStartedReminder(reply) == true else { return }
+        recordIdleQuestion()
+    }
+
     // MARK: Hearing the user
 
     private func recognized(_ event: CallRecognizer.Event) {
@@ -712,9 +723,9 @@ final class VoiceCall {
 
     private func stopSpeaking() {
         if let reply { synthesizer?.cancel(reply: reply) }
+        if audio?.flush(reminder: idleQuestion == nil ? nil : reply) == true { recordIdleQuestion() }
         reply = nil
         idleQuestion = nil
-        audio?.flush()
         unheard = [:]
         levels.output = 0
     }
@@ -793,8 +804,7 @@ final class VoiceCall {
             guard id == reply, let audio else { return }
             let tag = sentence
             unheard[tag, default: 0] += 1
-            audio.play(pcm, tag: tag)
-            if !pausedBySystem { recordIdleQuestion() }
+            audio.play(pcm, tag: tag, reminder: idleQuestion == nil ? nil : id)
             if phase != .speaking {
                 log("speaking")
                 phase = .speaking
@@ -813,6 +823,7 @@ final class VoiceCall {
             }
             show(.problem(String(localized: "语音合成出错：\(error.localizedDescription)")))
             if id == nil || id == reply {
+                recordIdleQuestionIfHeard()
                 reply = nil
                 idleQuestion = nil
                 if unheard.values.allSatisfy({ $0 == 0 }) && !inTurn { phase = .listening }
@@ -823,8 +834,8 @@ final class VoiceCall {
     private func played(_ tag: Int) {
         levels.lastSound = Date()
         guard reply != nil, let count = unheard[tag] else { return }
-        // Audio prepared during a system interruption may only be heard on resuming.
-        recordIdleQuestion()
+        // Completion may reach the main actor before the reminder's start notification.
+        recordIdleQuestionIfHeard()
         unheard[tag] = max(count - 1, 0)
         if replyMade, unheard.values.allSatisfy({ $0 == 0 }) { doneSpeaking() }
     }
