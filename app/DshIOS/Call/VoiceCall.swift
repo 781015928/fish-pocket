@@ -244,6 +244,8 @@ final class VoiceCall {
 
     /// A message went out; its turn has not started yet.
     @ObservationIgnored private var armed = false
+    /// The last spoken sentence still going into the engine.
+    @ObservationIgnored private var lastSubmission: Task<Void, Never>?
     /// The turn answering the last message is running: its text is spoken.
     @ObservationIgnored private var inTurn = false
     /// The reply being spoken (`CallSynthesizer`), and whether all of it has been made.
@@ -719,11 +721,11 @@ final class VoiceCall {
         replyText = ""
         armed = true
         phase = .thinking
-        // Sent like a message typed into the conversation (its bubble shows at once); while the
-        // stopped turn winds down it waits in the queue.
+        // Show each sentence right away. Wait for the previous one to enter the engine before
+        // submitting the next, even if the previous one is waiting for the reminder report.
         let reminder = idleReminder
         idleReminder = nil
-        session.composer.send(prompt: text, idleReminder: reminder)
+        lastSubmission = session.composer.send(prompt: text, idleReminder: reminder, after: lastSubmission)
         recognizer?.setContext(context())
         watchdog?.cancel()
         watchdog = Task { [weak self] in

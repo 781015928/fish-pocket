@@ -468,18 +468,25 @@ final class ComposerModel {
 
     /// Send a written question at once (询问 AI). Whatever the reader had typed or attached in
     /// this conversation stays in the input; a refused question comes back there to send again.
-    func send(prompt: String, idleReminder: (requestId: String, report: Task<Void, Never>)? = nil) {
+    /// The returned task ends when the engine accepts the prompt or the send fails.
+    @discardableResult
+    func send(prompt: String, idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
+              after previous: Task<Void, Never>? = nil) -> Task<Void, Never> {
         let draft = text, kept = attachments
         attachments = []
-        sendMessage(prompt, quotes: [], steer: false, running: session?.running ?? false, idleReminder: idleReminder)
+        let submission = sendMessage(prompt, quotes: [], steer: false, running: session?.running ?? false,
+                                     idleReminder: idleReminder, after: previous)
         text = draft
         attachments = kept
+        return submission
     }
 
     /// Quotes keep their own place in the draft and join the text only here, the way the web
     /// serializes its quote nodes: what the echo shows is what the engine receives.
+    @discardableResult
     private func sendMessage(_ draft: String, quotes sentQuotes: [String], steer: Bool, running: Bool,
-                             idleReminder: (requestId: String, report: Task<Void, Never>)? = nil) {
+                             idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
+                             after previous: Task<Void, Never>? = nil) -> Task<Void, Never> {
         let trimmed = MessageQuotes.compose(quotes: sentQuotes, text: expandMentions(draft))
         let shown = MessageQuotes.compose(quotes: sentQuotes, text: draft)
         let sent = attachments
@@ -512,11 +519,12 @@ final class ComposerModel {
         // empty list written over an empty one redraws everything that reads it.
         if !attachments.isEmpty { attachments = [] }
         if !sentQuotes.isEmpty { quotes = [] }
-        Task {
+        return Task {
             do {
                 guard let session else { throw CancellationError() }
                 var content = try Self.content(for: sent)
                 if !trimmed.isEmpty { content.append(["type": "text", "text": .string(trimmed)]) }
+                await previous?.value
                 // A quick answer can arrive while the app's question is still being reported.
                 await idleReminder?.report.value
                 try await session.prompt(content: content, steer: steer, requestId: requestId)
@@ -525,8 +533,10 @@ final class ComposerModel {
                 // The Host has the bytes now: the private copies are done with.
                 for attachment in sent { attachment.removeCopy() }
                 // A safety net: the message or its queue row normally retires the echo first.
-                try? await Task.sleep(for: .seconds(30))
-                retire(requestId)
+                Task {
+                    try? await Task.sleep(for: .seconds(30))
+                    retire(requestId)
+                }
             } catch {
                 retire(requestId)
                 restoreFailed(seq: seq, draft: draft, quotes: sentQuotes, attachments: sent)
