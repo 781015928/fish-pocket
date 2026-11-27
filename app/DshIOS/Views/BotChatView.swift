@@ -108,7 +108,9 @@ private struct BotPending: View {
         let team = app.botTeam
         VStack(spacing: 8) {
             if bot.waiting { BotModelPicker(bot: bot) }
-            if let question = team.question(of: bot) { BotQuestionCard(bot: bot, question: question) }
+            if let question = team.question(of: bot) {
+                BotQuestionCard(bot: bot, question: question).id(question["id"].string)
+            }
             if let view = team.pendingView(of: bot) { BotViewCard(bot: bot, pending: view).id(view["id"].string) }
             BotRequestCards(bot: bot)
             if let blocked = bot.blocked, !bot.waiting {
@@ -156,64 +158,102 @@ struct BotCard<Content: View>: View {
 
 /// A question the Bot asked (ds-bot's `ask_user`): its options as buttons.
 private struct BotQuestionCard: View {
+    private static let autoCollapseOptionCount = 4
+
     @Environment(AppModel.self) private var app
     let bot: BotInfo
     let question: JSON
+    private let options: [String]
+    @State private var collapsed: Bool
     @State private var picked: Set<String> = []
     @State private var custom = ""
     @State private var sending = false
 
+    init(bot: BotInfo, question: JSON) {
+        self.bot = bot
+        self.question = question
+        let options = question["options"].array.compactMap { $0["label"].string ?? $0.string }
+        self.options = options
+        _collapsed = State(initialValue: options.count >= Self.autoCollapseOptionCount)
+    }
+
     var body: some View {
+        let title = question["question"].string ?? ""
+        BotCard {
+            Button {
+                collapsed.toggle()
+            } label: {
+                HStack(spacing: 8) {
+                    if collapsed {
+                        Text("等你回答：\(title)").lineLimit(1)
+                    } else {
+                        Text(title).multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: collapsed ? "chevron.down" : "chevron.up")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Palette.secondary)
+                        .accessibilityHidden(true)
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Palette.ink)
+                .hitTarget()
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(collapsed ? Text("已收起") : Text("已展开"))
+            .accessibilityHint(collapsed ? "展开问题详情" : "收起问题详情")
+            if !collapsed { answerFields }
+        }
+    }
+
+    @ViewBuilder private var answerFields: some View {
         let multi = question["multiSelect"].bool ?? false
         let allowsCustom = question["allowCustom"].bool == true
         let typed = custom.trimmingCharacters(in: .whitespacesAndNewlines)
-        BotCard {
-            Text(question["question"].string ?? "").font(.subheadline.weight(.semibold))
-            if let detail = question["detail"].string, !detail.isEmpty {
-                Text(detail).font(.footnote).foregroundStyle(Palette.secondary)
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(question["options"].array.compactMap { $0["label"].string ?? $0.string }, id: \.self) { label in
-                    Button {
-                        if multi {
-                            if picked.contains(label) { picked.remove(label) } else { picked.insert(label) }
-                            Haptics.select()
-                        } else {
-                            answer([label])
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if multi { Image(systemName: picked.contains(label) ? "checkmark.square.fill" : "square") }
-                            Text(label).multilineTextAlignment(.leading)
-                            Spacer(minLength: 0)
-                        }
-                        .font(.subheadline)
-                        .foregroundStyle(Palette.ink)
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 40)
-                        .background(Palette.background, in: Capsule())
-                        .overlay(Capsule().strokeBorder(Palette.stroke))
+        if let detail = question["detail"].string, !detail.isEmpty {
+            Text(detail).font(.footnote).foregroundStyle(Palette.secondary)
+        }
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(options, id: \.self) { label in
+                Button {
+                    if multi {
+                        if picked.contains(label) { picked.remove(label) } else { picked.insert(label) }
+                        Haptics.select()
+                    } else {
+                        answer([label])
                     }
-                    .buttonStyle(.plain)
-                    .disabled(sending)
-                }
-            }
-            if allowsCustom {
-                TextField("也可以自己写", text: $custom, axis: .vertical).lineLimit(1...4)
+                } label: {
+                    HStack(spacing: 8) {
+                        if multi { Image(systemName: picked.contains(label) ? "checkmark.square.fill" : "square") }
+                        Text(label).multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
                     .font(.subheadline)
-                    .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(Palette.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.stroke))
-            }
-            HStack(spacing: 8) {
-                if multi || allowsCustom {
-                    Button("提交") { answer(multi ? Array(picked) : []) }
-                        .buttonStyle(.capsule(height: 36, fill: false))
-                        .disabled((picked.isEmpty && typed.isEmpty) || (!multi && typed.isEmpty) || sending)
+                    .foregroundStyle(Palette.ink)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 40)
+                    .background(Palette.background, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Palette.stroke))
                 }
-                Button("先不回答") { Task { await app.botTeam.dismiss(question, of: bot) } }
-                    .buttonStyle(.capsule(.outline, height: 36, fill: false))
+                .buttonStyle(.plain)
+                .disabled(sending)
             }
+        }
+        if allowsCustom {
+            TextField("也可以自己写", text: $custom, axis: .vertical).lineLimit(1...4)
+                .font(.subheadline)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Palette.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Palette.stroke))
+        }
+        HStack(spacing: 8) {
+            if multi || allowsCustom {
+                Button("提交") { answer(multi ? Array(picked) : []) }
+                    .buttonStyle(.capsule(height: 36, fill: false))
+                    .disabled((picked.isEmpty && typed.isEmpty) || (!multi && typed.isEmpty) || sending)
+            }
+            Button("先不回答") { Task { await app.botTeam.dismiss(question, of: bot) } }
+                .buttonStyle(.capsule(.outline, height: 36, fill: false))
         }
     }
 
