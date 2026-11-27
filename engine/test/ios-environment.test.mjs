@@ -21,6 +21,12 @@ test('the catalog description sends plugin work here', () => {
   assert.match(/^description: (.+)$/m.exec(text)[1], /\bplugin\b/);
 });
 
+test('the skill catalog distinguishes phone notifications from scheduled agent work', () => {
+  const description = /^description: (.+)$/m.exec(text)[1];
+  assert.match(description, /device notify schedule --after-seconds/);
+  assert.match(description, /schedule_create/);
+});
+
 test('every command listed as existing exists', () => {
   const section = /## Commands that exist\n([\s\S]*?)\n## /.exec(text)[1];
   const listed = [...section.matchAll(/`([^`]+)`/g)].flatMap((m) => m[1].split(' '));

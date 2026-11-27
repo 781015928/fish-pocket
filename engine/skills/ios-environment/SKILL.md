@@ -1,6 +1,6 @@
 ---
 name: ios-environment
-description: Load for unfamiliar iOS shell commands, DSH plugin work, or phone tasks such as calendar, photos, reminders, timed notifications and opening apps.
+description: When the current request asks for a reminder later, load this skill and use `device notify schedule --after-seconds N --body TEXT` in bash. Leave an existing or canceled reminder alone unless the user asks to change it. Use `schedule_create` when the agent must do work at that time. Also load for calendar, Reminders lists, photos, opening apps, unfamiliar iOS shell commands and DSH plugin work.
 ---
 
 # Working on iOS
