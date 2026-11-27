@@ -109,7 +109,9 @@ test('a localized reminder precedes its exact spoken reply once, even with other
   await dial(routes, 'bot', 'call2');
   const text = '還在嗎？沒聲音的話我先掛了';
   const reminder = { sessionId: 's1', leaseId, requestId: 'spoken', text };
-  assert.equal((await said(routes, reminder)).status, 200);
+  assert.deepEqual(await (await said(routes, reminder)).json(), { ok: true });
+  // The first response can be lost even though its text was saved.
+  assert.deepEqual(await (await said(routes, reminder)).json(), { ok: true });
 
   const reply = user('spoken', '在');
   const messages = [reply];
@@ -132,7 +134,7 @@ test('a localized reminder precedes its exact spoken reply once, even with other
   assert.deepEqual(hidden.source.sections, [{ name: 'voice-call-said', text: hidden.content[0].text }]);
 
   // A repeated report or pre-step pass cannot add the reminder again.
-  assert.equal((await said(routes, reminder)).status, 200);
+  assert.deepEqual(await (await said(routes, reminder)).json(), { ok: true });
   assert.deepEqual((await step(preStep, 's1', { messages })).messages.map((m) => m.source.kind), ['user', SOURCE]);
 });
 
@@ -150,7 +152,7 @@ test('expiry and renewal of a lapsed call discard old and late reminders', async
   const renewed = await dial(routes, 's1', 'call1');
   assert.notEqual(renewed, leaseId);
   // Renewal itself has to discard a lease that nobody already looked up as expired.
-  await said(routes, reminder);
+  assert.deepEqual(await (await said(routes, reminder)).json(), { ok: false });
   const messages = [user('spoken', '在')];
   assert.deepEqual((await step(preStep, 's1', { messages })).messages.map((m) => m.source.kind), ['user', SOURCE]);
 });
@@ -163,12 +165,12 @@ test('hanging up clears the reminder and a late report cannot follow a redial', 
   const messages = [user('spoken', '在')];
   await said(routes, reminder);
   await state(routes, { sessionId: 's1', callId: 'call1', active: false });
-  await said(routes, reminder);
+  assert.deepEqual(await (await said(routes, reminder)).json(), { ok: false });
   assert.deepEqual((await step(preStep, 's1', { messages })).messages, messages);
 
   const redial = await dial(routes, 's1', 'call2');
   assert.notEqual(redial, leaseId);
-  await said(routes, reminder);
+  assert.deepEqual(await (await said(routes, reminder)).json(), { ok: false });
   await state(routes, { sessionId: 's1', callId: 'call1', active: false });
   assert.deepEqual((await step(preStep, 's1', { messages })).messages.map((m) => m.source.kind), ['user', SOURCE]);
   await said(routes, { ...reminder, leaseId: redial });

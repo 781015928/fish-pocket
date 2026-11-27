@@ -262,7 +262,7 @@ final class VoiceCall {
     @ObservationIgnored private var lastUserText = ""
     @ObservationIgnored private var replyText = ""
     @ObservationIgnored private var idleQuestion: String?
-    @ObservationIgnored private var idleReminder: (requestId: String, report: Task<Void, Never>)?
+    @ObservationIgnored private var idleReminder: (requestId: String, report: Task<Bool, Never>)?
     @ObservationIgnored private var speakable = SpeakableStream()
 
     init(sessionId: String, botId: String?, title: String, app: AppModel) {
@@ -643,7 +643,16 @@ final class VoiceCall {
         let client = app.client
         let body: JSON = ["sessionId": .string(sessionId), "leaseId": .string(leaseId),
                           "requestId": .string(requestId), "text": .string(question)]
-        idleReminder = (requestId, Task { _ = await Self.post("said", body, client: client) })
+        idleReminder = (requestId, Task { [weak self] in
+            // One retry with the same ID covers an unsent report or a lost acknowledgment.
+            for _ in 0..<2 {
+                guard let self, !self.ended, self.leaseId == leaseId, !Task.isCancelled else { return false }
+                if let confirmed = (await Self.post("said", body, client: client))?["ok"].bool {
+                    return confirmed
+                }
+            }
+            return false
+        })
     }
 
     private func recordIdleQuestionIfHeard() {
@@ -823,7 +832,15 @@ final class VoiceCall {
             }
             show(.problem(String(localized: "语音合成出错：\(error.localizedDescription)")))
             if id == nil || id == reply {
+                let drainsReminder = idleQuestion != nil && unheard.values.contains { $0 > 0 }
                 recordIdleQuestionIfHeard()
+                // The failed synthesis can leave audio in the speaker queue. Keep tracking
+                // the reminder until that audio drains or the user cuts it off.
+                if drainsReminder, let reply {
+                    synthesizer?.cancel(reply: reply)
+                    replyMade = true
+                    return
+                }
                 reply = nil
                 idleQuestion = nil
                 if unheard.values.allSatisfy({ $0 == 0 }) && !inTurn { phase = .listening }

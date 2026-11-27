@@ -3,14 +3,15 @@
 // needs to know that a session is on a call, so the model answers the way a call needs.
 //
 //   POST /api/ios-call/state  { sessionId, callId, active }          → { ok: true, leaseId? }
-//   POST /api/ios-call/said   { sessionId, leaseId, requestId, text } → { ok: true }
+//   POST /api/ios-call/said   { sessionId, leaseId, requestId, text } → { ok: boolean }
 //
 // While a session is on a call, each turn's first step gets one note for the model, recorded
 // like the time context: a user message of its own source kind, which the app's timeline never
 // shows. The app renews the call every `RENEW_MS` and ends it on hang-up; a call the app stopped
 // renewing (a crash, a lost connection) lapses after `LEASE_MS`, so no later turn is told it is
 // on a call that is over. The idle reminder is bound to the lease and to the request id
-// reserved for the user's spoken reply. The app waits for the report before sending that reply.
+// reserved for the user's spoken reply. The app waits for the current lease to accept the report
+// before sending that reply. A repeated report for that lease also succeeds.
 import { randomUUID } from 'node:crypto';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
 
@@ -112,7 +113,8 @@ export default class IosCall {
           return json({ error: { kind: 'invalid', message: 'expected { sessionId, leaseId, requestId, text }' } }, 400);
         }
         const call = currentCall(sessionId);
-        if (call?.leaseId === leaseId && !call.reminders.has(requestId)) call.reminders.set(requestId, text);
+        if (call?.leaseId !== leaseId) return json({ ok: false });
+        if (!call.reminders.has(requestId)) call.reminders.set(requestId, text);
         return json({ ok: true });
       },
     }), 'ios-call: said');

@@ -471,7 +471,7 @@ final class ComposerModel {
     /// The returned task ends when the engine accepts the prompt or the send fails.
     @discardableResult
     func send(prompt: String, voiceCallId: String? = nil,
-              idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
+              idleReminder: (requestId: String, report: Task<Bool, Never>)? = nil,
               after previous: Task<Void, Never>? = nil) -> Task<Void, Never> {
         let draft = text, kept = attachments
         attachments = []
@@ -487,7 +487,7 @@ final class ComposerModel {
     @discardableResult
     private func sendMessage(_ draft: String, quotes sentQuotes: [String], steer: Bool, running: Bool,
                              voiceCallId: String? = nil,
-                             idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
+                             idleReminder: (requestId: String, report: Task<Bool, Never>)? = nil,
                              after previous: Task<Void, Never>? = nil) -> Task<Void, Never> {
         let trimmed = MessageQuotes.compose(quotes: sentQuotes, text: expandMentions(draft))
         let shown = MessageQuotes.compose(quotes: sentQuotes, text: draft)
@@ -528,7 +528,10 @@ final class ComposerModel {
                 if !trimmed.isEmpty { content.append(["type": "text", "text": .string(trimmed)]) }
                 await previous?.value
                 // A quick answer can arrive while the app's question is still being reported.
-                await idleReminder?.report.value
+                if let idleReminder, !(await idleReminder.report.value) {
+                    if let voiceCallId { try CallCenter.shared.checkActive(callId: voiceCallId) }
+                    throw EngineError(code: nil, message: String(localized: "请求已取消或连接已断开，请重试。"), detail: .null)
+                }
                 try await session.prompt(content: content, steer: steer, requestId: requestId, voiceCallId: voiceCallId)
                 ShareSuggestions.didSend(in: sessionId, app: app)
                 mentions = [:]
