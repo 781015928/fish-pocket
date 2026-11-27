@@ -13,6 +13,7 @@ import { capabilities, invoke } from './binding.mjs';
 import { callerClaim } from './caller.mjs';
 import { TOOLS } from './tools.mjs';
 import { registerDeviceTools } from './cli.mjs';
+import { explainScheduleDeletion } from './schedule-notice.mjs';
 
 /**
  * `ctx.iosNative` — the same path the engine's own tools take.
@@ -80,6 +81,8 @@ export default function IosNative(ctx) {
       }
     },
   );
+
+  if (available.notify) ctx.on('agent/pre-step', explainScheduleDeletion);
 
   // One tool per capability the addon actually implements. A tool whose
   // capability is missing is never registered, so the addon's table stays the

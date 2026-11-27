@@ -27,6 +27,12 @@ test('the skill catalog distinguishes phone notifications from scheduled agent w
   assert.match(description, /schedule_create/);
 });
 
+test('the loaded skill leaves the notification delay and message to the current request', () => {
+  const section = /## Device capabilities\n([\s\S]*?)\n## /.exec(text)[1];
+  const examples = [...section.matchAll(/`device notify schedule ([^`]+)`/g)].map(match => match[1]);
+  assert.deepEqual(examples, ["--after-seconds SECONDS --body 'MESSAGE'"]);
+});
+
 test('every command listed as existing exists', () => {
   const section = /## Commands that exist\n([\s\S]*?)\n## /.exec(text)[1];
   const listed = [...section.matchAll(/`([^`]+)`/g)].flatMap((m) => m[1].split(' '));

@@ -159,7 +159,11 @@ Services the user has connected under 连接器 (Connectors) on the app's 探索
 
 ## Device capabilities
 
-Run `device --help` through `bash` to list the capabilities available in this conversation. Use `device calendar list` for appointments. For “remind me in 20 minutes”, run `device notify schedule --after-seconds 1200 --body '喝水'`: the phone alerts even when the app is closed. To add an item to the Reminders app, use `device reminders create --title '喝水'`. Run `device <capability> --help` for actions and flags, or read `references/device-capabilities.md` for permissions and results.
+Run `device --help` through `bash` to list this conversation's capabilities. Use `device calendar list` for appointments and `device <capability> --help` for actions and flags. Permissions and results are in `references/device-capabilities.md`.
+
+A scheduler notice with `change: deleted` closes the old task. A replacement phone notification needs a new request from the user. The old task title and an updated Skill catalog are context. If the user's latest message is just an acknowledgment, reply to it. If they ask to set it again, follow that new request.
+
+For a phone alert the user is asking for now, use `device notify schedule --after-seconds SECONDS --body 'MESSAGE'` with the delay and message from that request. The phone can alert them even if the app is closed. For an item in the Reminders app, use `device reminders create --title 'TITLE'`.
 
 Three rules hold even before you read it:
 
