@@ -2,6 +2,7 @@ import ActivityKit
 import Foundation
 import Observation
 import SwiftUI
+import UserNotifications
 
 /// Mirrors agent work onto one Live Activity while the user is away from it: the phone's own
 /// sessions, and the ones on a computer that the phone answers for (`RemoteStore.attention`).
@@ -201,6 +202,12 @@ final class LiveActivityController {
     /// on the lock screen, while the island lets go at once.
     private func finish(at endedAt: Date) {
         guard let activity, var state = last else { return }
+        // Observation coalesces changes. Work can resume just before the timer wakes.
+        let next = app.flatMap { Self.state(of: $0, held: held) }
+        if let next, !CallCenter.shared.active {
+            apply(next)
+            return
+        }
         self.activity = nil
         last = nil
         state.phase = .done
@@ -211,7 +218,18 @@ final class LiveActivityController {
         state.others = 0
         state.endedAt = endedAt
         let policy: ActivityUIDismissalPolicy = onScreen ? .immediate : .after(.now.addingTimeInterval(5 * 60))
-        if !onScreen { finished = activity }
+        if !onScreen {
+            finished = activity
+            if next == nil, let app {
+                // Confirm the focused session is still present and idle, even if it went off the list.
+                let idle = if let remote = RemoteStore.sessionId(of: state.sessionId) {
+                    app.remote.sessions[remote]?.status == .idle
+                } else {
+                    app.sessions[state.sessionId]?.running == false
+                }
+                if idle { CompletionNotifications.post(state, activityId: activity.id) }
+            }
+        }
         Task { await activity.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: policy) }
     }
 
@@ -296,6 +314,51 @@ final class LiveActivityController {
     private static func title(_ id: String, in app: AppModel) -> String {
         if let session = app.sessions[id], !session.isSubagent { return app.title(of: id) }
         return String(localized: "子智能体")
+    }
+}
+
+/// Posts the one completion for the Live Activity and hands its tap to the existing link inbox.
+@MainActor
+final class CompletionNotifications: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    private nonisolated static let sessionKey = "dsh.done.session"
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+
+    static func post(_ state: LiveActivityController.State, activityId: String) {
+        guard UIApplication.shared.applicationState == .background else { return }
+        Task {
+            let center = UNUserNotificationCenter.current()
+            switch await center.notificationSettings().authorizationStatus {
+            case .authorized, .provisional, .ephemeral: break
+            default: return
+            }
+            guard UIApplication.shared.applicationState == .background else { return }
+            let content = UNMutableNotificationContent()
+            content.title = String(localized: "已完成")
+            content.body = state.title
+            content.sound = .default
+            content.threadIdentifier = "dsh.done"
+            content.userInfo = [sessionKey: state.sessionId]
+            do {
+                try await center.add(UNNotificationRequest(identifier: "dsh.done.\(activityId)", content: content, trigger: nil))
+            } catch {
+                NSLog("[live-activity] completion notification not scheduled: %@", String(describing: error))
+            }
+        }
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
+        let id = response.actionIdentifier == UNNotificationDefaultActionIdentifier
+            ? response.notification.request.content.userInfo[Self.sessionKey] as? String : nil
+        // UIKit restores the window in the completion handler and requires the main thread.
+        Task { @MainActor in
+            if let id, !id.isEmpty { LinkInbox.shared.request = LinkRequest(link: .session(id)) }
+            completionHandler()
+        }
     }
 }
 

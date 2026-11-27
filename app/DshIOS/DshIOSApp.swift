@@ -5,6 +5,7 @@ struct DshIOSApp: App {
     /// The one kind of window; its value says which session it opens on, if any.
     static let window = "conversation"
 
+    @UIApplicationDelegateAdaptor(CompletionNotifications.self) private var completionNotifications
     @StateObject private var engine = NodeEngine.shared
     @Environment(\.scenePhase) private var scenePhase
 
@@ -46,7 +47,7 @@ struct LinkRequest: Equatable {
     let token = UUID()
 }
 
-/// A link from an App Intent, which has no window of its own: the first window to see it takes it.
+/// A link from an App Intent or a notification tap: the first window to see it takes it.
 @MainActor
 @Observable
 final class LinkInbox {
