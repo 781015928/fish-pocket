@@ -15,3 +15,25 @@ export function actionCaller() {
   }
   return owner;
 }
+
+/** Only the selected agent's CLI may supply the shell-side destination writer. */
+export function browserFileWriter(agent) {
+  const owner = owners.getStore();
+  return owner?.agent === agent ? owner?.saveBrowserFile : undefined;
+}
+
+export function nativeCommand(defineCommand, name, run) {
+  return defineCommand(name, async (argv, shell) => {
+    try {
+      const text = await run(argv, shell);
+      return { stdout: text + '\n', stderr: '', exitCode: 0 };
+    } catch (error) {
+      return { stdout: '', stderr: name + ': ' + (error?.message ?? String(error)) + '\n', exitCode: 1 };
+    }
+  });
+}
+
+export function resultText(result) {
+  if (result.isError) throw new Error(result.error.message);
+  return result.content.filter(block => block.type === 'text').map(block => block.text).join('\n');
+}

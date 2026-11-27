@@ -10,6 +10,7 @@ import { gitAvailable, gitCommand } from './git/index.mjs';
 import { nativeCommandNames, nativeShellCommands } from './native-programs.mjs';
 import { OPEN_COMMANDS, openAvailable, openShellCommands } from './open-url.mjs';
 import { browserAvailable, browserCommand } from './browser-cli.mjs';
+import { deviceAvailable, deviceCommand } from './device-cli.mjs';
 
 export const SHELLS = new Set(['bash', 'sh', 'dash', 'zsh']);
 export const BIN = '/bin';
@@ -110,6 +111,7 @@ const trapCommand = () => defineCommand('trap', async () => ({ stdout: '', stder
 const custom = [
   rgCommand(),
   trapCommand(),
+  ...(deviceAvailable() ? [deviceCommand(defineCommand)] : []),
   ...(browserAvailable() ? [browserCommand(defineCommand)] : []),
   nodeLikeCommand('node'),
   ...Object.entries(NODE_CLIS).map(([name, script]) => nodeLikeCommand(name, script)),

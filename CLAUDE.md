@@ -141,7 +141,7 @@
 
 ## 浏览器能力
 
-会话默认通过 `browser-cli` Skill 和 Shell 操作工作台浏览器，复杂操作仍能经 `connector_search` 启用原工具。原 `browser` 工具有哪些动作、各要什么参数、给模型看的说明，全写在 `app/DshIOS/Browser/BrowserCatalog.swift` 一处：引擎按它生成工具（`describe`），原生层按它放行动作，参数也按它检查。
+会话通过 `browser-cli` Skill 和内置 `browser` 命令操作工作台浏览器，其他本机能力通过 `device` 命令调用。原 `browser` 工具有哪些动作、各要什么参数、给模型看的说明，全写在 `app/DshIOS/Browser/BrowserCatalog.swift` 一处：引擎按它生成工具（`describe`），原生层按它放行动作，参数也按它检查。
 
 - 加一个浏览器能力：在 `BrowserCatalog` 里登记动作和参数，在 `BrowserAgent.perform` 里接上实现（多数写在 `BrowserAbilities.swift`）。引擎的 `tools.mjs` 和 `caps_browser.m` 都不用改。
 - 返回值里带 `image: {data, mediaType}` 的，引擎会自动存成附件给模型看；会出图的动作在清单里标 `image`，引擎先确认模型能看图再执行。

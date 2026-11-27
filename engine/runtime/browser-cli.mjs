@@ -1,99 +1,138 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { describe } from '../plugins/ios-native/binding.mjs';
-import { invokeBrowserTool } from '../plugins/ios-native/discovery.mjs';
-import { actionCaller } from './action-command.mjs';
-
-const commands = new Set(['open', 'read', 'click', 'type', 'select', 'scroll', 'back', 'forward', 'reload',
-  'tabs', 'new_tab', 'select_tab', 'close_tab', 'screenshot']);
+import { invokeDeviceTool } from '../plugins/ios-native/cli.mjs';
+import { actionCaller, nativeCommand, resultText, withActionCaller } from './action-command.mjs';
+import { optionHelp, parseOptions } from './cli-arguments.mjs';
 
 export function browserAvailable() {
   return describe('browser') !== null;
 }
 
-function argumentValue(raw, schema, name) {
-  if (schema.type === 'integer' || schema.type === 'number') {
-    const value = Number(raw);
-    if (!raw.trim() || !Number.isFinite(value) || (schema.type === 'integer' && !Number.isInteger(value))) {
-      throw new Error(name + ' needs ' + schema.type);
-    }
-    return value;
-  }
-  if (schema.type === 'boolean') {
-    if (raw !== 'true' && raw !== 'false') throw new Error(name + ' needs true or false');
-    return raw === 'true';
-  }
-  if (schema.enum && !schema.enum.includes(raw)) throw new Error(name + ' must be one of ' + schema.enum.join(', '));
-  return raw;
-}
-
-// BrowserCatalog supplies the actual actions, required positional arguments, flag names and types.
 export function parseBrowserCommand(argv, catalog) {
-  const actions = catalog.actions.filter(item => commands.has(item.name));
   const [op, ...rest] = argv;
   if (!op || op === '--help' || (op === 'help' && !rest.length)) {
-    return { help: 'browser <action> [arguments]\n' + actions.map(item => item.name).join(', ')
-      + '\nUse browser help <action> for parameters. For advanced operations discover the browser tool.' };
+    return { help: 'browser <action> [arguments]\n' + catalog.actions.map(item => item.name).join(', ')
+      + '\nUse browser help <action> for parameters.' };
   }
-  const actionName = op === 'help' ? rest[0] : op;
-  const action = actions.find(item => item.name === actionName);
-  if (!action) throw new Error('Unknown browser command. Run browser --help. Discover the browser tool for advanced operations.');
-  const specs = new Map(catalog.params.map(param => [param.name, param.schema]));
+  const name = op === 'help' ? rest[0] : op;
+  const action = catalog.actions.find(item => item.name === name);
+  if (!action) throw new Error('Unknown browser command. Run browser --help.');
   const takes = action.takes ?? [], needs = action.needs ?? [];
+  const properties = Object.fromEntries(catalog.params.filter(p => takes.includes(p.name)).map(p => [p.name, p.schema]));
+  if (action.image) properties.out = { type: 'string', description: 'Save the screenshot to a file.' };
   if (op === 'help' || rest[0] === '--help') {
-    return { help: [action.does, 'browser ' + [action.name, ...needs.map(key => '<' + key + '>')].join(' '),
-      ...takes.map(key => '--' + key + '  ' + (specs.get(key)?.description ?? key)),
-      ...(action.image ? ['--out  Write the screenshot to a file for read_image.'] : [])].join('\n') };
+    return { help: [action.does, 'browser ' + [name, ...needs.map(key => '<' + key + '>')].join(' '), ...optionHelp(properties)].join('\n') };
   }
-  const params = {};
-  let out;
-  for (let i = 0; i < rest.length; i++) {
-    const flag = rest[i].startsWith('--');
-    const key = flag ? rest[i].slice(2) : needs.find(key => !Object.hasOwn(params, key));
-    if (flag && key === 'out' && action.image) {
-      if (out !== undefined || !rest[i + 1]) throw new Error('--out needs one file path');
-      out = rest[++i];
-      continue;
-    }
-    const spec = specs.get(key);
-    if (!spec || !takes.includes(key) || Object.hasOwn(params, key)) throw new Error('Unexpected argument ' + rest[i] + '. Use browser help ' + action.name);
-    let value = rest[i];
-    if (flag) value = spec.type === 'boolean' && !['true', 'false'].includes(rest[i + 1]) ? 'true' : rest[++i];
-    if (value === undefined) throw new Error('--' + key + ' needs a value');
-    params[key] = argumentValue(value, spec, key);
+  const { out, ...params } = parseOptions(rest, properties, needs);
+  if (out === '') throw new Error('--out needs a file path');
+  if (params.headers && Object.values(params.headers).some(value => typeof value !== 'string')) {
+    throw new Error('headers needs a JSON object of string values');
   }
-  for (const key of needs) if (!Object.hasOwn(params, key)) throw new Error(action.name + ' needs ' + key);
-  return { args: { action: action.name, ...params }, out };
+  return { args: { action: name, ...params }, out };
 }
 
-async function dispatch({ args, out }, shell, invoke) {
-  const owner = actionCaller();
-  const signal = shell.signal ?? owner.signal;
-  signal.throwIfAborted();
-  const result = await invoke(owner.tools, owner.agent, args, signal);
-  if (result.isError) throw new Error(result.error.message);
-  const text = result.content.filter(block => block.type === 'text').map(block => block.text).join('\n');
-  const image = result.content.find(block => block.type === 'image')?.attachment;
-  if (!image) return text;
-  const attachments = owner.agent.ctx.get('attachments');
-  let file = attachments.imageHostPath(image);
-  if (out) {
-    const stored = await attachments.readImage(image, signal);
-    signal.throwIfAborted();
-    file = path.posix.resolve('/', shell.cwd, out);
-    await shell.fs.writeFile(file, stored.data);
-  }
-  if (!file) throw new Error('Use browser screenshot --out <file> to save the picture.');
-  return text + '\nImage file: ' + file + '\nUse read_image to view it.';
-}
-
-export function browserCommand(defineCommand, catalog = () => describe('browser'), invoke = invokeBrowserTool) {
-  return defineCommand('browser', async (argv, shell) => {
+// Reserve the default filename through the same mount that will receive the bytes.
+// Two tabs can finish a download with the same suggested name at the same time.
+async function reserveDownload(fs, target) {
+  const { dir, name, ext } = path.posix.parse(target);
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? target : path.posix.join(dir, name + ' (' + n + ')' + ext);
     try {
-      const parsed = parseBrowserCommand(argv, catalog());
-      const output = parsed.help ?? await dispatch(parsed, shell, invoke);
-      return { stdout: output + '\n', stderr: '', exitCode: 0 };
+      await fs.createExclusive(candidate, { mode: 0o600 });
+      return candidate;
     } catch (error) {
-      return { stdout: '', stderr: 'browser: ' + error.message + '\n', exitCode: 1 };
+      if (error.code !== 'EEXIST' && !error.message.startsWith('EEXIST:')) throw error;
     }
+  }
+}
+
+async function outputPath(fs, file) {
+  let entry;
+  try { entry = await fs.lstat(file); }
+  catch (error) {
+    if (error.code === 'ENOENT' || error.message.startsWith('ENOENT:')) return file;
+    throw error;
+  }
+  return entry.isSymbolicLink ? fs.realpath(file) : file;
+}
+
+// Reserve a sibling through the actual shell mount before issuing a request with an explicit
+// destination. Publish by rename so a failed download leaves the previous file intact.
+async function outputSibling(fs, destination) {
+  const directory = path.posix.dirname(destination);
+  await fs.mkdir(directory, { recursive: true });
+  if (await fs.exists(destination) && (await fs.stat(destination)).isDirectory) {
+    throw new Error(destination + ' is a directory; give a file path.');
+  }
+  const temp = path.posix.join(directory, '.fish-pocket-' + randomUUID());
+  await fs.createExclusive(temp, { mode: 0o600 });
+  return temp;
+}
+
+async function saveBrowserFile(shell, args, perform) {
+  const { fs } = shell;
+  const directory = await mkdtemp('/tmp/fish-pocket-browser-');
+  const staged = path.posix.join(directory, 'output');
+  let sibling, reserved, destination;
+  try {
+    if (args.path) {
+      destination = await outputPath(fs, args.path);
+      sibling = await outputSibling(fs, destination);
+    }
+    const value = await perform({ ...args, shellOutputFile: staged });
+    if (!value.savedTo) return value;
+    shell.signal?.throwIfAborted();
+    sibling ??= await outputSibling(fs, value.savedTo);
+    await fs.cp(staged, sibling);
+    if (!args.path) reserved = await reserveDownload(fs, value.savedTo);
+    const target = destination ?? reserved;
+    await fs.mv(sibling, target);
+    sibling = reserved = undefined;
+    return { ...value, savedTo: args.path ?? target };
+  } finally {
+    try {
+      if (sibling) await fs.rm(sibling, { force: true });
+      if (reserved) await fs.rm(reserved, { force: true });
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+}
+
+export function browserCommand(defineCommand, { catalog = () => describe('browser'), invoke = invokeDeviceTool } = {}) {
+  return nativeCommand(defineCommand, 'browser', async (argv, shell) => {
+    const parsed = parseBrowserCommand(argv, catalog());
+    if (parsed.help !== undefined) return parsed.help;
+    const { args, out } = parsed;
+    const owner = actionCaller();
+    const signal = shell.signal ?? owner.signal;
+    signal.throwIfAborted();
+    const absolute = file => path.posix.resolve('/', shell.cwd, file);
+    const writesFile = args.action === 'pdf' || args.action === 'request';
+    if (writesFile && args.path) args.path = absolute(args.path);
+    if (args.action === 'upload' && Array.isArray(args.paths)) args.paths = args.paths.map(absolute);
+    const call = () => invoke(owner.tools, owner.agent, 'browser', args, signal);
+    const result = writesFile ? await withActionCaller({
+      ...owner, saveBrowserFile: (params, perform) => saveBrowserFile(shell, params, perform),
+    }, call) : await call();
+    const lines = [resultText(result)];
+    for (const block of result.content.filter(block => block.type === 'image')) {
+      const attachments = owner.agent.ctx.get('attachments');
+      let file = attachments.imageHostPath(block.attachment);
+      if (out !== undefined) {
+        const stored = await attachments.readImage(block.attachment, signal);
+        signal.throwIfAborted();
+        file = absolute(out);
+        await shell.fs.writeFile(file, stored.data);
+      } else if (owner.images) {
+        owner.images.push(block);
+      } else if (!file) {
+        throw new Error('Use browser screenshot --out <file> to save the picture.');
+      }
+      if (file) lines.push('Image file: ' + file);
+    }
+    return lines.filter(Boolean).join('\n');
   });
 }

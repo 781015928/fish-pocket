@@ -1,6 +1,6 @@
 ---
 name: ios-environment
-description: Use for Fish Pocket shell limits, DSH plugin work, device capabilities, or operating another iOS app.
+description: Load for unfamiliar iOS shell commands, DSH plugin work, or phone tasks such as calendar, photos, reminders, timed notifications and opening apps.
 ---
 
 # Working on iOS
@@ -22,8 +22,9 @@ Anything not listed here should be assumed missing.
 - **Network:** `curl`
 - **Development:** `git node pnpm pnpx`
 - **Video and audio:** `ffmpeg ffprobe` (see the Video and audio section below)
+- **Phone capabilities:** `device` (calendar, photos, notifications and other system services)
 - **Workbench browser:** `browser` (load the browser-cli skill for usage)
-- **Links:** `open xdg-open` hand a URL to the phone, so code that opens the system browser (a plugin's sign-in, a CLI's docs link) works. URLs only, the same schemes as the open_url tool; a file path fails. To take the user somewhere yourself, use that tool
+- **Links:** `open xdg-open` hand a URL to the phone, so code that opens the system browser (a plugin's sign-in, a CLI's docs link) works. URLs only, the same schemes as device open_url; a file path fails.
 - **Shell:** `bash sh env printenv which type command date sleep timeout time xargs yes true false expr whoami hostname pwd history alias unalias clear help`
 
 Python and pip also exist: see the Python section below.
@@ -158,7 +159,7 @@ Services the user has connected under 连接器 (Connectors) on the app's 探索
 
 ## Device capabilities
 
-Use `connector_search` for the phone's calendar, photos, reminders and other device capabilities. A unique match makes the original typed tool available on the next step. See `references/device-capabilities.md` for the available operations and platform details.
+Run `device --help` through `bash` to list the capabilities available in this conversation. Use `device calendar list` for appointments. For “remind me in 20 minutes”, run `device notify schedule --after-seconds 1200 --body '喝水'`: the phone alerts even when the app is closed. To add an item to the Reminders app, use `device reminders create --title '喝水'`. Run `device <capability> --help` for actions and flags, or read `references/device-capabilities.md` for permissions and results.
 
 Three rules hold even before you read it:
 
@@ -179,14 +180,14 @@ You cannot tap through other apps by yourself. If the user has set up **iCTRL** 
 
 Rules that hold even before you read it:
 
-- Use it last: device capabilities, `open_url` and the workbench browser come first, because they are faster and do not take over the screen.
+- Use it last: `device` commands, `device open_url` and the workbench browser come first, because they are faster and do not take over the screen.
 - Whenever you stop to talk to the user (done, a question, a go-ahead, something only they can do, an error), first return to this app (`${FISH_POCKET_URL_SCHEME:-fishpocket}://`, through the service's own `open_url`), then write. They are looking at the other app and cannot see this conversation.
 - Payments, deletions, sending messages and account changes need the user's go-ahead first. Passwords, codes and captchas are theirs.
 - Never switch on its remote access or nearby discovery.
 
 ## Web browser
 
-Load `browser-cli` for interactive pages and screenshots in the conversation's workbench. Use `web_fetch` for public page text. For advanced actions, enable the structured tool with `connector_search(query="browser")`.
+Load `browser-cli` for interactive pages and screenshots in the conversation's workbench. Use `web_fetch` for public page text. Run `browser --help` for the installed actions.
 
 - Whose browser: a subagent uses the one of the conversation that started it. A Bot's own chat uses the Bot's, kept when the chat moves on to a new part, so pages opened in an earlier part are still there: call `tabs` before opening them again.
 

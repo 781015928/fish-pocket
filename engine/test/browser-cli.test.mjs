@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { browserCommand, parseBrowserCommand } from '../runtime/browser-cli.mjs';
-import { withActionCaller } from '../runtime/action-command.mjs';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { MountableFs, ReadWriteFs, OverlayFs } from 'just-bash';
+import { browserFileWriter, withActionCaller } from '../runtime/action-command.mjs';
 
 const catalog = {
   actions: [
@@ -14,8 +18,8 @@ const catalog = {
     type: name === 'index' ? 'integer' : name === 'fullPage' ? 'boolean' : 'string',
   } })),
 };
-const command = browserCommand((_name, run) => run, () => catalog,
-  (tools, agent, args, signal) => tools.runBrowser(agent, args, signal));
+const command = browserCommand((_name, run) => run, { catalog: () => catalog,
+  invoke: (tools, agent, _name, args, signal) => tools.runBrowser(agent, args, signal) });
 const signal = new AbortController().signal;
 
 test('browser CLI uses the installed catalog and accepts positional and named arguments', () => {
@@ -63,4 +67,67 @@ test('screenshots use the approved image result and write through the Shell file
   assert.match((await run()).stderr, /read-only/);
   tools.runBrowser = async () => ({ isError: true, error: { message: 'user refused' } });
   assert.match((await run()).stderr, /user refused/);
+});
+
+test('advanced actions use the complete browser catalog, including typed lists and dictionaries', () => {
+  const advanced = { actions: [
+    { name: 'upload', takes: ['index', 'paths'], needs: ['index', 'paths'] },
+    { name: 'request', takes: ['url', 'headers'], needs: ['url'] },
+    { name: 'setCookie', takes: ['path', 'value'], needs: ['value'] },
+  ], params: Object.entries({ index: { type: 'integer' }, paths: { type: 'array', items: { type: 'string' } },
+    url: { type: 'string' }, headers: { type: 'object' }, path: { type: 'string' }, value: { type: 'string' } })
+      .map(([name, schema]) => ({ name, schema })) };
+  const parse = (...argv) => parseBrowserCommand(argv, advanced);
+  assert.deepEqual(parse('upload', '1', '["one","two"]').args.paths, ['one', 'two']);
+  assert.deepEqual(parse('request', 'https://example.org', '--headers', '{"Accept":"text/plain"}').args.headers, { Accept: 'text/plain' });
+  assert.throws(() => parse('request', 'https://example.org', '--headers', '{"Accept":3}'), /string values/);
+  assert.match(parse('--help').help, /setCookie/);
+  assert.equal(parse('setCookie', 'plain', '--path', '/docs').args.path, '/docs');
+});
+
+test('file responses publish through shell mounts and reserve distinct default names', async t => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), 'cli-output-test-'));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const root = path.join(base, 'work');
+  await fs.mkdir(root);
+  const disk = new MountableFs({
+    base: new OverlayFs({ root: '/', mountPoint: '/', readOnly: true, allowSymlinks: true }),
+    mounts: [{ mountPoint: root, filesystem: new ReadWriteFs({ root, allowSymlinks: true }) }],
+  });
+  const pdf = { actions: [{ name: 'pdf', takes: ['path'] }], params: [{ name: 'path', schema: { type: 'string' } }] };
+  const agent = { id: 'reader' }, owner = { agent, agents: new Map([[agent.id, agent]]), tools: {}, signal };
+  const staged = [];
+  const bytes = Buffer.from([0, 255, 16, 128]);
+  const run = browserCommand((_name, fn) => fn, { catalog: () => pdf,
+    invoke: async (_tools, caller, _name, { action, ...args }) => {
+      assert.equal(action, 'pdf');
+      const value = await browserFileWriter(caller)(args, async ({ shellOutputFile }) => {
+        staged.push(shellOutputFile);
+        await fs.writeFile(shellOutputFile, bytes);
+        return { savedTo: args.path ?? path.join(root, 'downloads', 'title.pdf') };
+      });
+      return { content: [{ type: 'text', text: value.savedTo }] };
+    } });
+  const invoke = (...args) => withActionCaller(owner, () => run(['pdf', ...args], { signal, cwd: root, fs: disk }));
+  const generated = await Promise.all([invoke(), invoke()]);
+  const outputs = generated.map(result => result.stdout.trim());
+  assert.deepEqual(outputs.sort(), [path.join(root,'downloads/title (2).pdf'), path.join(root,'downloads/title.pdf')]);
+  for (const file of outputs) assert.deepEqual(await fs.readFile(file), bytes);
+  assert.equal((await invoke('--path', 'user.pdf')).exitCode, 0);
+  assert.deepEqual(await fs.readFile(path.join(root,'user.pdf')), bytes);
+  await fs.writeFile(path.join(base, 'secret.pdf'), 'unchanged');
+  await fs.symlink(path.join(base, 'secret.pdf'), path.join(root, 'outside-link'));
+  await fs.symlink(path.join(root, 'user.pdf'), path.join(root, 'inside-link'));
+  assert.equal((await invoke('--path', 'inside-link')).exitCode, 0);
+  assert.equal((await fs.lstat(path.join(root, 'inside-link'))).isSymbolicLink(), true);
+  const calls = staged.length;
+  assert.equal((await invoke('--path', 'outside-link')).exitCode, 1);
+  assert.equal(await fs.readFile(path.join(base, 'secret.pdf'), 'utf8'), 'unchanged');
+  assert.equal((await invoke('--path', '../outside.pdf')).exitCode, 1);
+  assert.equal(staged.length, calls);
+  await fs.symlink(base, path.join(root, 'sibling'));
+  assert.equal((await invoke('--path', 'sibling/outside.pdf')).exitCode, 1);
+  assert.equal(staged.length, calls);
+  await assert.rejects(fs.stat(path.join(base, 'outside.pdf')), { code: 'ENOENT' });
+  for (const tmp of staged) await assert.rejects(fs.stat(path.dirname(tmp)), { code: 'ENOENT' });
 });
