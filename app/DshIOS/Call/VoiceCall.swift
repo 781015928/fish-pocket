@@ -66,6 +66,10 @@ final class CallCenter {
 
     var active: Bool { call.map { !$0.ended } ?? false }
 
+    func checkActive(callId: String) throws {
+        guard active, call?.callId == callId else { throw CancellationError() }
+    }
+
     /// Call `sessionId`. Another call ends first; calling the same conversation again opens it.
     func start(sessionId: String, botId: String?, title: String, app: AppModel) {
         if let call, call.sessionId == sessionId, !call.ended {
@@ -195,7 +199,7 @@ final class VoiceCall {
     let botId: String?
     let title: String
     let levels = CallLevels()
-    private let callId = UUID().uuidString.lowercased()
+    fileprivate let callId = UUID().uuidString.lowercased()
 
     private(set) var phase = Phase.connecting {
         didSet {
@@ -725,7 +729,8 @@ final class VoiceCall {
         // submitting the next, even if the previous one is waiting for the reminder report.
         let reminder = idleReminder
         idleReminder = nil
-        lastSubmission = session.composer.send(prompt: text, idleReminder: reminder, after: lastSubmission)
+        lastSubmission = session.composer.send(prompt: text, voiceCallId: callId,
+                                              idleReminder: reminder, after: lastSubmission)
         recognizer?.setContext(context())
         watchdog?.cancel()
         watchdog = Task { [weak self] in

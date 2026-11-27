@@ -470,12 +470,13 @@ final class ComposerModel {
     /// this conversation stays in the input; a refused question comes back there to send again.
     /// The returned task ends when the engine accepts the prompt or the send fails.
     @discardableResult
-    func send(prompt: String, idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
+    func send(prompt: String, voiceCallId: String? = nil,
+              idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
               after previous: Task<Void, Never>? = nil) -> Task<Void, Never> {
         let draft = text, kept = attachments
         attachments = []
         let submission = sendMessage(prompt, quotes: [], steer: false, running: session?.running ?? false,
-                                     idleReminder: idleReminder, after: previous)
+                                     voiceCallId: voiceCallId, idleReminder: idleReminder, after: previous)
         text = draft
         attachments = kept
         return submission
@@ -485,6 +486,7 @@ final class ComposerModel {
     /// serializes its quote nodes: what the echo shows is what the engine receives.
     @discardableResult
     private func sendMessage(_ draft: String, quotes sentQuotes: [String], steer: Bool, running: Bool,
+                             voiceCallId: String? = nil,
                              idleReminder: (requestId: String, report: Task<Void, Never>)? = nil,
                              after previous: Task<Void, Never>? = nil) -> Task<Void, Never> {
         let trimmed = MessageQuotes.compose(quotes: sentQuotes, text: expandMentions(draft))
@@ -527,7 +529,7 @@ final class ComposerModel {
                 await previous?.value
                 // A quick answer can arrive while the app's question is still being reported.
                 await idleReminder?.report.value
-                try await session.prompt(content: content, steer: steer, requestId: requestId)
+                try await session.prompt(content: content, steer: steer, requestId: requestId, voiceCallId: voiceCallId)
                 ShareSuggestions.didSend(in: sessionId, app: app)
                 mentions = [:]
                 // The Host has the bytes now: the private copies are done with.
@@ -537,6 +539,8 @@ final class ComposerModel {
                     try? await Task.sleep(for: .seconds(30))
                     retire(requestId)
                 }
+            } catch is CancellationError where voiceCallId != nil {
+                retire(requestId)
             } catch {
                 retire(requestId)
                 restoreFailed(seq: seq, draft: draft, quotes: sentQuotes, attachments: sent)
