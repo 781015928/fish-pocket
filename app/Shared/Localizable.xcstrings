@@ -4778,6 +4778,40 @@
         }
       }
     },
+    "AI 回一条语音，按念的字数扣。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The AI replies with a voice message. Charged by the characters it speaks."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La IA responde con un mensaje de voz. Se cobra por los caracteres que lee."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI が音声メッセージで返信します。読み上げた文字数に応じて差し引かれます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI가 음성 메시지로 답해요. 읽은 글자 수만큼 차감돼요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 回一則語音，按念的字數扣。"
+          }
+        }
+      }
+    },
     "API Key" : {
       "shouldTranslate" : false
     },
@@ -6119,6 +6153,47 @@
         }
       }
     },
+    "ZIP 含当前会话、子会话和附件，可能有个人信息。分享前请先检查，只发给你信任的人。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ZIP contains this session, its child sessions and attachments, which may include personal information. Check it before sharing, and send it only to people you trust."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El ZIP contiene esta sesión, sus subsesiones y archivos adjuntos, que pueden incluir información personal. Revísalo antes de compartirlo y envíalo solo a personas de confianza."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ZIP には現在のセッション、子セッション、添付ファイルが含まれ、個人情報が入っている可能性があります。共有する前に確認し、信頼できる相手にだけ送ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ZIP에는 현재 세션, 하위 세션, 첨부 파일이 포함돼 있어 개인 정보가 들어 있을 수 있어요. 공유하기 전에 확인하고, 신뢰하는 사람에게만 보내세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ZIP 含当前会话、子会话和附件，可能有个人信息。分享前请先检查，只发给你信任的人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ZIP 含目前對話、子對話和附件，可能有個人資訊。分享前請先檢查，只傳給你信任的人。"
+          }
+        }
+      }
+    },
     "iCTRL 服务" : {
       "localizations" : {
         "en" : {
@@ -6228,6 +6303,40 @@
         }
       }
     },
+    "一个余额，处处通用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One Balance for Everything"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un solo saldo para todo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ひとつの残高ですべてに"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하나의 잔액으로 어디서나"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一個餘額，處處通用"
+          }
+        }
+      }
+    },
     "一支常驻的 Bot 团队：可以私聊，可以拉群一起商量，也能到点自己开工。入口在侧边栏。" : {
       "localizations" : {
         "en" : {
@@ -6326,6 +6435,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下次傳訊息時一起送到"
+          }
+        }
+      }
+    },
+    "不用 API Key，也不用别家的账号。一份积分，对话、生图、语音都能用。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No API key, no other accounts. One set of credits covers chat, image generation and voice."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin clave de API ni otras cuentas. Los mismos créditos sirven para chat, generación de imágenes y voz."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API キーもほかのアカウントも不要。同じクレジットで会話、画像生成、音声が使えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API 키도, 다른 계정도 필요 없어요. 크레딧 하나로 대화, 이미지 생성, 음성을 모두 쓸 수 있어요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不用 API Key，也不用別家的帳號。一份積分，對話、生圖、語音都能用。"
+          }
+        }
+      }
+    },
+    "不用不扣，没有月费。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing is charged when you don't use it. No monthly fee."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si no lo usas, no se cobra. Sin cuota mensual."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使わなければ減りません。月額料金もありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "쓰지 않으면 차감되지 않아요. 월 요금도 없어요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不用不扣，沒有月費。"
           }
         }
       }
@@ -7838,6 +8015,40 @@
         }
       }
     },
+    "和 AI 打电话，听你说按时长扣，念回答按字数扣。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talk to the AI on a call. Listening is charged by duration, spoken replies by character count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Habla con la IA en una llamada. Escuchar se cobra por duración y las respuestas habladas, por caracteres."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI と通話します。聞き取りは時間、回答の読み上げは文字数に応じて差し引かれます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI와 통화해요. 듣기는 시간, 답변 읽기는 글자 수만큼 차감돼요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和 AI 打電話，聽你說按時長扣，念回答按字數扣。"
+          }
+        }
+      }
+    },
     "和语音通话、语音消息是同一个声音，在这里改了那边也跟着变。试听按火山引擎的价格计费。" : {
       "localizations" : {
         "en" : {
@@ -8480,6 +8691,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在這支手機上產生，畫面外加上 Fish Pocket 的標誌。錄影沒有聲音。"
+          }
+        }
+      }
+    },
+    "复制内容" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Contents"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar contenido"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内容をコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내용 복사"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷貝內容"
           }
         }
       }
@@ -10054,6 +10299,87 @@
         }
       }
     },
+    "报告和错误日志里去掉了密钥和个人路径，但仍可能含有隐私信息。分享前请先检查，只发给你信任的人。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secrets and personal paths are removed from the report and the error log, but they may still contain private information. Check them before sharing, and send them only to people you trust."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El informe y el registro de errores no incluyen secretos ni rutas personales, pero aún pueden contener información privada. Revísalos antes de compartirlos y envíalos solo a personas de confianza."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "レポートとエラーログからはシークレットと個人のパスが取り除かれていますが、プライベートな情報が残っている可能性があります。共有する前に確認し、信頼できる相手にだけ送ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보고서와 오류 로그에서 비밀 키와 개인 경로는 제거했지만, 여전히 개인 정보가 들어 있을 수 있어요. 공유하기 전에 확인하고, 신뢰하는 사람에게만 보내세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "报告和错误日志里去掉了密钥和个人路径，但仍可能含有隐私信息。分享前请先检查，只发给你信任的人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報告和錯誤日誌已移除金鑰和個人路徑，但仍可能含有隱私資訊。分享前請先檢查，只傳給你信任的人。"
+          }
+        }
+      }
+    },
+    "报告和错误日志里去掉了密钥和个人路径，但可能仍有你和 Bot 的对话、记忆等个人信息。分享前请先检查并去掉隐私内容，只发给你信任的人。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secrets and personal paths are removed from the report and the error log, but they may still contain personal information, such as your conversations with Bots and their memories. Before sharing, check them and remove anything private, and send them only to people you trust."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El informe y el registro de errores no incluyen secretos ni rutas personales, pero aún pueden contener información personal, como tus conversaciones con los Bots y sus recuerdos. Antes de compartirlos, revísalos, quita lo que sea privado y envíalos solo a personas de confianza."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "レポートとエラーログからはシークレットと個人のパスが取り除かれていますが、Bot との会話や記憶などの個人情報が残っている可能性があります。共有する前に内容を確認してプライベートな部分を取り除き、信頼できる相手にだけ送ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보고서와 오류 로그에서 비밀 키와 개인 경로는 제거했지만, Bot과의 대화나 기억 같은 개인 정보가 남아 있을 수 있어요. 공유하기 전에 내용을 확인해 사적인 부분을 지우고, 신뢰하는 사람에게만 보내세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "报告和错误日志里去掉了密钥和个人路径，但可能仍有你和 Bot 的对话、记忆等个人信息。分享前请先检查并去掉隐私内容，只发给你信任的人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報告和錯誤日誌已移除金鑰和個人路徑，但可能仍有你和 Bot 的對話、記憶等個人資訊。分享前請先檢查並移除隱私內容，只傳給你信任的人。"
+          }
+        }
+      }
+    },
     "抬腕看会话" : {
       "localizations" : {
         "en" : {
@@ -10152,6 +10478,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "依照下面的步驟安裝，裝好後這裡會自動更新。"
+          }
+        }
+      }
+    },
+    "按生成的张数扣，图越大、参考图越多扣得越多；没生成出来的不扣。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charged per image generated. Larger images and more reference images cost more; nothing is charged if no image comes out."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se cobra por imagen generada. Las imágenes más grandes y con más imágenes de referencia cuestan más; si no se genera ninguna, no se cobra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成した枚数ごとに差し引かれます。画像が大きいほど、参照画像が多いほど多くかかります。生成できなかった分は差し引かれません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생성한 장 수만큼 차감돼요. 이미지가 크거나 참고 이미지가 많을수록 더 차감되고, 생성되지 않으면 차감되지 않아요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按生成的張數扣，圖越大、參考圖越多扣得越多；沒生成出來的不扣。"
           }
         }
       }
@@ -10530,6 +10890,80 @@
         }
       }
     },
+    "支持深度思考和工具调用。1 积分约 %lld 个输入 Token 或 %lld 个输出 Token。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deep thinking and tool calls. 1 credit ≈ %1$lld input tokens or %2$lld output tokens."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Razonamiento profundo y uso de herramientas. 1 crédito ≈ %1$lld tokens de entrada o %2$lld de salida."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深い思考とツール呼び出しに対応。1 クレジット ≈ 入力 %1$lld トークンまたは出力 %2$lld トークン。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "심층 사고와 도구 호출을 지원해요. 1크레딧 ≈ 입력 %1$lld토큰 또는 출력 %2$lld토큰."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持深度思考和工具调用。1 积分约 %1$lld 个输入 Token 或 %2$lld 个输出 Token。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支援深度思考和工具呼叫。1 積分約 %1$lld 個輸入 Token 或 %2$lld 個輸出 Token。"
+          }
+        }
+      }
+    },
+    "支持深度思考和工具调用，按 Token 扣积分。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deep thinking and tool calls. Charged by tokens."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Razonamiento profundo y uso de herramientas. Se cobra por tokens."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深い思考とツール呼び出しに対応。トークン数に応じて差し引かれます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "심층 사고와 도구 호출을 지원해요. 토큰 수만큼 차감돼요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支援深度思考和工具呼叫，按 Token 扣積分。"
+          }
+        }
+      }
+    },
     "收起文字" : {
       "localizations" : {
         "en" : {
@@ -10768,6 +11202,87 @@
         }
       }
     },
+    "日志可能含有隐私信息，分享前请先检查，只发给你信任的人。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The log may contain private information. Check it before sharing, and send it only to people you trust."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El registro puede contener información privada. Revísalo antes de compartirlo y envíalo solo a personas de confianza."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログにはプライベートな情報が含まれている可能性があります。共有する前に確認し、信頼できる相手にだけ送ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그에 개인 정보가 들어 있을 수 있어요. 공유하기 전에 확인하고, 신뢰하는 사람에게만 보내세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日志可能含有隐私信息，分享前请先检查，只发给你信任的人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日誌可能含有隱私資訊，分享前請先檢查，只傳給你信任的人。"
+          }
+        }
+      }
+    },
+    "日志可能包含你和 Bot 的对话、记忆等个人信息。分享前请先检查并去掉隐私内容，只发给你信任的人。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The log may contain personal information, such as your conversations with Bots and their memories. Before sharing it, check it and remove anything private, and send it only to people you trust."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El registro puede contener información personal, como tus conversaciones con los Bots y sus recuerdos. Antes de compartirlo, revísalo, quita lo que sea privado y envíalo solo a personas de confianza."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログには、Bot との会話や記憶などの個人情報が含まれている可能性があります。共有する前に内容を確認してプライベートな部分を取り除き、信頼できる相手にだけ送ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그에는 Bot과의 대화나 기억 같은 개인 정보가 들어 있을 수 있어요. 공유하기 전에 내용을 확인해 사적인 부분을 지우고, 신뢰하는 사람에게만 보내세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日志可能包含你和 Bot 的对话、记忆等个人信息。分享前请先检查并去掉隐私内容，只发给你信任的人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日誌可能包含你和 Bot 的對話、記憶等個人資訊。分享前請先檢查並移除隱私內容，只傳給你信任的人。"
+          }
+        }
+      }
+    },
     "日志（可选）" : {
       "localizations" : {
         "en" : {
@@ -10968,6 +11483,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AI 代理看到的其他 App 畫面，會隨對話傳給你選的模型服務商。付款、刪除、幫你傳訊息前，它會先問你；密碼和驗證碼由你自己輸入。"
+          }
+        }
+      }
+    },
+    "暂时无法获取积分包，轻点重试" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not load credit packs. Tap to retry."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron cargar los paquetes de créditos. Toca para reintentar."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クレジットパックを読み込めません。タップして再試行"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크레딧 팩을 불러올 수 없어요. 탭해서 다시 시도"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫時無法取得積分包，輕點重試"
           }
         }
       }
@@ -12340,6 +12889,74 @@
         }
       }
     },
+    "正在下载…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargando…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロード中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드 중…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在下載…"
+          }
+        }
+      }
+    },
+    "正在从电脑读取…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading from the computer…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo desde el ordenador…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パソコンから読み込み中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컴퓨터에서 읽는 중…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在從電腦讀取…"
+          }
+        }
+      }
+    },
     "正在从相册读取…" : {
       "localizations" : {
         "en" : {
@@ -13632,6 +14249,40 @@
         }
       }
     },
+    "生图和语音在各自的设置里选「Fish Pocket 账号」后，从同一个余额里扣。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image generation and voice draw from the same balance once you choose Fish Pocket Account in their settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La generación de imágenes y la voz usan el mismo saldo cuando eliges Cuenta de Fish Pocket en sus ajustes."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像生成と音声も、それぞれの設定で「Fish Pocket アカウント」を選ぶと同じ残高から差し引かれます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미지 생성과 음성도 각 설정에서 ‘Fish Pocket 계정’을 선택하면 같은 잔액에서 차감돼요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生圖和語音在各自的設定裡選「Fish Pocket 帳號」後，從同一個餘額裡扣。"
+          }
+        }
+      }
+    },
     "生成视频并分享" : {
       "localizations" : {
         "en" : {
@@ -13836,6 +14487,40 @@
         }
       }
     },
+    "用火山引擎的声音念回复，按字数扣。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reads replies aloud in a Volcengine voice. Charged by character count."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lee las respuestas en voz alta con una voz de Volcengine. Se cobra por caracteres."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volcengine の声で返信を読み上げます。文字数に応じて差し引かれます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volcengine 목소리로 답변을 읽어 줘요. 글자 수만큼 차감돼요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用火山引擎的聲音念回覆，按字數扣。"
+          }
+        }
+      }
+    },
     "用火山引擎，和语音通话同一个声音（%@），费用由火山引擎按字数收取。" : {
       "localizations" : {
         "en" : {
@@ -13906,6 +14591,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "介面支援繁體中文"
+          }
+        }
+      }
+    },
+    "登录信息只发给 Fish Pocket 服务器，用来识别账号和记录积分。对话、提示词和声音经服务器转给 DeepSeek 模型的服务商和火山引擎，服务器只记录用量，不保存内容。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in details go only to the Fish Pocket servers, to identify your account and keep track of credits. Chats, prompts and voice pass through the servers to the provider serving the DeepSeek models and to Volcengine; the servers record usage only and do not store the content."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los datos de inicio de sesión solo se envían a los servidores de Fish Pocket, para identificar tu cuenta y llevar la cuenta de los créditos. Los chats, las indicaciones y la voz pasan por los servidores hasta el proveedor que sirve los modelos de DeepSeek y hasta Volcengine; los servidores solo registran el uso y no guardan el contenido."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインイン情報は Fish Pocket のサーバーにのみ送信され、アカウントの識別とクレジットの記録に使われます。会話、プロンプト、音声はサーバーを経由して DeepSeek モデルの提供元と Volcengine に転送されます。サーバーは使用量だけを記録し、内容は保存しません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인 정보는 Fish Pocket 서버로만 전송되며, 계정 식별과 크레딧 기록에 사용돼요. 대화, 프롬프트, 음성은 서버를 거쳐 DeepSeek 모델 제공업체와 Volcengine으로 전달돼요. 서버는 사용량만 기록하고 내용은 저장하지 않아요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入資訊只傳給 Fish Pocket 伺服器，用來識別帳號和記錄積分。對話、提示詞和聲音經伺服器轉送給 DeepSeek 模型的服務商和火山引擎，伺服器只記錄用量，不儲存內容。"
           }
         }
       }
@@ -14402,6 +15121,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "看看我今天有什麼安排"
+          }
+        }
+      }
+    },
+    "积分包" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Credit Packs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paquetes de créditos"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クレジットパック"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크레딧 팩"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "積分包"
+          }
+        }
+      }
+    },
+    "积分能用来" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Credits Cover"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para qué sirven los créditos"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クレジットの使い道"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크레딧 사용처"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "積分能用來"
           }
         }
       }
@@ -15990,6 +16777,40 @@
         }
       }
     },
+    "说话转成文字，按说话时长扣。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turns speech into text. Charged by how long you speak."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convierte la voz en texto. Se cobra según cuánto hablas."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "話した内容を文字にします。話した時間に応じて差し引かれます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "말을 글자로 바꿔요. 말한 시간만큼 차감돼요."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "說話轉成文字，按說話時長扣。"
+          }
+        }
+      }
+    },
     "说说你想要什么，Agent 做好后会放在这里" : {
       "localizations" : {
         "en" : {
@@ -16054,6 +16875,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "讀取頁面"
+          }
+        }
+      }
+    },
+    "购买积分" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buy Credits"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprar créditos"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クレジットを購入"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크레딧 구매"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "購買積分"
           }
         }
       }
@@ -19687,6 +20542,7 @@
       }
     },
     "ZIP 含当前会话、子会话和附件，分享前请确认接收方。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21939,6 +22795,7 @@
       }
     },
     "下面是引擎日志。复制或分享出去，就能看出卡在哪一步。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -57104,6 +57961,7 @@
       }
     },
     "报告里已经去掉密钥和个人路径，可以直接贴到问题反馈里。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -101405,6 +102263,40 @@
         }
       }
     },
+    "通话被系统暂停，结束后自动继续" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The system paused the call. It will continue afterward."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El sistema pausó la llamada. Continuará después."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システムにより通話が一時停止中です。終わると自動で再開します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템이 통화를 일시 정지했어요. 끝나면 자동으로 이어져요"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通話被系統暫停，結束後會自動繼續"
+          }
+        }
+      }
+    },
     "通话静音" : {
       "localizations" : {
         "en" : {
@@ -113147,6 +114039,46 @@
         }
       }
     },
+    "关闭预览" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Preview"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar vista previa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレビューを閉じる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "미리보기 닫기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭预览"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉預覽"
+          }
+        }
+      }
+    },
     "恢复 %lld 个标签页" : {
       "localizations" : {
         "en" : {
@@ -114395,6 +115327,7 @@
       }
     },
     "1 积分约等于 %lld 个输入 Token 或 %lld 个输出 Token，不对话不扣。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -114769,6 +115702,7 @@
       }
     },
     "不需要 DeepSeek 账号，也不需要 API Key。登录后购买额度，就能开始对话。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -115143,6 +116077,7 @@
       }
     },
     "按实际用量扣积分，不对话不扣。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -115177,6 +116112,7 @@
       }
     },
     "支持深度思考和工具调用。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -115211,6 +116147,7 @@
       }
     },
     "暂时无法获取额度包，轻点重试" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -115755,6 +116692,7 @@
       }
     },
     "登录信息只发给 Fish Pocket 服务器，用来识别账号和记录额度。用额度对话时，消息经 Fish Pocket 服务器转发给 DeepSeek 模型的服务商，服务器只记录用量，不保存对话内容。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -116135,6 +117073,7 @@
       }
     },
     "购买额度" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -116475,6 +117414,7 @@
       }
     },
     "额度包" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

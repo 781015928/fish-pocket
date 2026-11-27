@@ -6,7 +6,7 @@ struct FishPocketPrivacyNote: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "lock.fill").font(.caption)
-            Text("登录信息只发给 Fish Pocket 服务器，用来识别账号和记录额度。用额度对话时，消息经 Fish Pocket 服务器转发给 DeepSeek 模型的服务商，服务器只记录用量，不保存对话内容。")
+            Text("登录信息只发给 Fish Pocket 服务器，用来识别账号和记录积分。对话、提示词和声音经服务器转给 DeepSeek 模型的服务商和火山引擎，服务器只记录用量，不保存内容。")
                 .font(.footnote)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -17,8 +17,9 @@ struct FishPocketPrivacyNote: View {
 }
 
 /// 设置 → Fish Pocket 账号, and the sheet a conversation opens. One page on both sides of
-/// signing in: before, what credits are and what they cost, with signing in at the bottom;
-/// after, the balance, the packs with one button that buys the chosen one, and the account.
+/// signing in: before, what credits are spent on and what they cost, with signing in at the
+/// bottom; after, the balance, the packs with one button that buys the chosen one, what
+/// credits are spent on, and the account. One balance pays for chat, images and speech.
 struct FishPocketPage: View {
     /// Opened because a conversation ran out of credits: the page is then about buying more.
     var topUp = false
@@ -46,12 +47,14 @@ struct FishPocketPage: View {
                         if !topUp { recordsLink }
                     }
                     if account.canPurchase { packs } else { FishPocketNoPurchaseNote() }
-                    FishPocketPerks(rate: account.tokensPerCredit)
+                    FishPocketUses(rate: account.tokensPerCredit)
+                    FishPocketRules()
                     if !topUp { accountCard }
                 } else {
                     FishPocketIntro()
-                    FishPocketPerks(rate: account.tokensPerCredit)
+                    FishPocketUses(rate: account.tokensPerCredit)
                     packs
+                    FishPocketRules()
                     FishPocketPrivacyNote().padding(.horizontal, 4)
                 }
             }
@@ -67,7 +70,7 @@ struct FishPocketPage: View {
         }
         .animation(.snappy, value: account.signedIn)
         // Signed out, the page's own heading is the title.
-        .navigationTitle(account.signedIn ? Text(topUp && account.canPurchase ? "购买额度" : "Fish Pocket 账号") : Text(verbatim: ""))
+        .navigationTitle(account.signedIn ? Text(topUp && account.canPurchase ? "购买积分" : "Fish Pocket 账号") : Text(verbatim: ""))
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $recordsOpen) { FishPocketRecordsPage() }
         .task { await account.refresh() }
@@ -118,14 +121,14 @@ struct FishPocketPage: View {
 
     private var packs: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("额度包")
+            Text("积分包")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Palette.secondary)
                 .padding(.horizontal, 4)
             if account.packs.isEmpty {
                 Group {
                     if account.packsFailed {
-                        Button("暂时无法获取额度包，轻点重试") { Task { await account.loadPacks() } }
+                        Button("暂时无法获取积分包，轻点重试") { Task { await account.loadPacks() } }
                             .font(.subheadline)
                             .foregroundStyle(Palette.secondary)
                     } else {
@@ -459,7 +462,7 @@ struct FishPocketIntro: View {
                 .foregroundStyle(Palette.ink)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.top, 16)
-            Text("不需要 DeepSeek 账号，也不需要 API Key。登录后购买额度，就能开始对话。")
+            Text("不用 API Key，也不用别家的账号。一份积分，对话、生图、语音都能用。")
                 .font(.subheadline)
                 .foregroundStyle(Palette.secondary)
                 .multilineTextAlignment(.center)
@@ -507,25 +510,108 @@ struct FishPocketBalance: View {
     }
 }
 
-/// What credits buy, and how they are spent.
-struct FishPocketPerks: View {
-    /// What one credit buys, once the server has said.
+/// What credits are spent on: chat, images and speech, each with its model and how it is charged.
+/// Speech lists its features: input, reading aloud (when it is set to Volcengine), voice messages, calls.
+struct FishPocketUses: View {
+    /// What one credit buys of chat, once the server has said.
     var rate: (input: Int, output: Int)?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("积分能用来")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Palette.secondary)
+                .padding(.horizontal, 4)
+            VStack(spacing: 0) {
+                use(.chat, Text("对话"), model: "DeepSeek-V4.1-Flash") {
+                    note(rate.map {
+                        Text("支持深度思考和工具调用。1 积分约 \($0.input) 个输入 Token 或 \($0.output) 个输出 Token。")
+                    } ?? Text("支持深度思考和工具调用，按 Token 扣积分。"))
+                }
+                Divider().padding(.leading, 64)
+                use(.imageGen, Text("生图"), model: "Seedream 5.5") {
+                    note(Text("按生成的张数扣，图越大、参考图越多扣得越多；没生成出来的不扣。"))
+                }
+                Divider().padding(.leading, 64)
+                use(.voice, Text("语音"), model: String(localized: "火山引擎")) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        feature(Text("语音输入"), Text("说话转成文字，按说话时长扣。"))
+                        feature(Text("朗读"), Text("用火山引擎的声音念回复，按字数扣。"))
+                        feature(Text("语音消息"), Text("AI 回一条语音，按念的字数扣。"))
+                        feature(Text("语音通话"), Text("和 AI 打电话，听你说按时长扣，念回答按字数扣。"))
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding(.vertical, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .cardSurface()
+        }
+    }
+
+    private func use(_ icon: ExploreGlyph.Kind, _ title: Text, model: String, @ViewBuilder _ detail: () -> some View) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            ExploreGlyph(kind: icon, size: 34)
+                .padding(.top, -5)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    title.font(.subheadline.weight(.semibold)).foregroundStyle(Palette.ink)
+                    Text(verbatim: model)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Palette.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                detail()
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func note(_ text: Text) -> some View {
+        text
+            .font(.footnote)
+            .foregroundStyle(Palette.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// One of the speech features: its name, then what it does and how it is charged. The names
+    /// share one column, as wide as the widest of them in this language, so the details line up.
+    private func feature(_ name: Text, _ detail: Text) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            ZStack(alignment: .leading) {
+                Group { Text("语音输入"); Text("朗读"); Text("语音消息"); Text("语音通话") }.hidden()
+                name.foregroundStyle(Palette.ink)
+            }
+            .fontWeight(.medium)
+            .fixedSize()
+            detail
+                .foregroundStyle(Palette.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.footnote)
+    }
+}
+
+/// How credits are charged and kept, the same whatever they are spent on.
+struct FishPocketRules: View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            perk("brain", Text(verbatim: "DeepSeek-V4.1-Flash"), Text("支持深度思考和工具调用。"))
-            perk("gauge.with.dots.needle.33percent", Text("用多少扣多少"), rate.map {
-                Text("1 积分约等于 \($0.input) 个输入 Token 或 \($0.output) 个输出 Token，不对话不扣。")
-            } ?? Text("按实际用量扣积分，不对话不扣。"))
-            perk("infinity", Text("购买的积分不会过期"), Text("没有有效期，什么时候用完都可以。"))
+            rule("gauge.with.dots.needle.33percent", Text("用多少扣多少"), Text("不用不扣，没有月费。"))
+            rule("infinity", Text("购买的积分不会过期"), Text("没有有效期，什么时候用完都可以。"))
+            // Images and speech go through Fish Pocket only when chosen (no automatic switching).
+            rule("arrow.triangle.branch", Text("一个余额，处处通用"), Text("生图和语音在各自的设置里选「Fish Pocket 账号」后，从同一个余额里扣。"))
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardSurface()
     }
 
-    private func perk(_ icon: String, _ title: Text, _ detail: Text) -> some View {
+    private func rule(_ icon: String, _ title: Text, _ detail: Text) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .medium))

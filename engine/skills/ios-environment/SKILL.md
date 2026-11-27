@@ -188,6 +188,8 @@ Rules that hold even before you read it:
 
 Load `browser-cli` for interactive pages and screenshots in the conversation's workbench. Use `web_fetch` for public page text. For advanced actions, enable the structured tool with `connector_search(query="browser")`.
 
+- Whose browser: a subagent uses the one of the conversation that started it. A Bot's own chat uses the Bot's, kept when the chat moves on to a new part, so pages opened in an earlier part are still there: call `tabs` before opening them again.
+
 ## Not possible at all
 
 Tell the user plainly rather than attempting these: compiling native code, running containers or virtual machines, starting system services, background daemons that outlive the app, controlling other apps, or anything needing root. Work that needs them belongs on another machine.

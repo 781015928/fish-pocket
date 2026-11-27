@@ -432,8 +432,7 @@ struct MainView: View {
     /// Any conversation of the user's, archived ones and those on a computer included; the Bots' are not.
     private var hasConversations: Bool {
         if app.remote.signedIn { return true }
-        let team = app.botTeam.teamWorkspaceId
-        return app.workspaces.contains { $0.id != team && !app.sessions(in: $0, includeArchived: true).isEmpty }
+        return app.workspaces.contains { !app.sessions(in: $0, includeArchived: true).isEmpty }
             || !app.sessions(in: nil, includeArchived: true).isEmpty
     }
 

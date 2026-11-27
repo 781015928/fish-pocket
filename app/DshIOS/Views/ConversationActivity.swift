@@ -12,10 +12,11 @@ struct ConversationActivity: View {
     let openJobs: () -> Void
     @Environment(AppModel.self) private var app
 
-    /// A subagent works in the browser of the conversation that started it.
+    /// A subagent works in the browser of the conversation that started it, a Bot's chat in the Bot's.
+    /// Not while the user has closed its picture.
     @MainActor
     static func browser(of sessionId: String, in app: AppModel) -> BrowserModel? {
-        guard let model = BrowserModel.existing(BrowserAgent.owner(of: sessionId, in: app)), model.hasPages else { return nil }
+        guard let model = BrowserOwnership.existing(of: sessionId, in: app), model.hasPages, !model.previewHidden else { return nil }
         return model
     }
 
@@ -34,7 +35,8 @@ struct ConversationActivity: View {
         HStack(alignment: .bottom, spacing: 8) {
             if let browser {
                 // A view of its own: a new picture redraws it alone, and it is the one that watches.
-                BrowserThumbnail(browser: browser, action: openBrowser).id(ObjectIdentifier(browser))
+                BrowserThumbnail(browser: browser, action: openBrowser) { browser.hidePreview() }
+                    .id(ObjectIdentifier(browser))
             }
             if jobs.visibleCount > 0 {
                 chip(

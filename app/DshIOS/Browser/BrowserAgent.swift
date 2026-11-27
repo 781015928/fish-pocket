@@ -26,9 +26,9 @@ import WebKit
         guard let app = EngineConnection.shared.app else {
             throw BrowserAgentError("the app is still connecting to its engine; try again in a moment")
         }
-        // 子智能体用发起它的那个会话的浏览器。
-        let owner = owner(of: session, in: app)
-        let browser = BrowserModel.session(owner, origin: app.client.origin)
+        // 子智能体用发起它的那个会话的浏览器，Bot 自己的聊天不论到了哪一段都用这个 Bot 的（BrowserOwnership）。
+        let place = await BrowserOwnership.resolve(session, in: app)
+        let browser = BrowserOwnership.browser(place, origin: app.client.origin)
         let named = args["tab"] as? String
 
         // 整个浏览器的事和标签页本身的操作：不碰网页，不用排队。
@@ -74,10 +74,17 @@ import WebKit
         let revived = tab.page == nil
         let page = browser.revive(tab)
         var answer = try await page.serially {
+            // A picture the user closed shows again when the agent comes back to the browser: in a
+            // turn begun after it was closed, or after it had left the page (`BrowserPresence`).
+            // Not while it goes on in the turn the user closed it in.
+            if let hidden = browser.previewHiddenAt,
+               page.presence.driver == nil || app.turnStarted[session].map({ $0 > hidden }) == true {
+                browser.showPreview()
+            }
             page.presence.began(op == "new_tab" ? "open" : op == "select_tab" ? "read" : op, driver: session)
-            // The panel's stop button ends the turn of the conversation that owns this browser.
+            // The panel's stop button ends the turn of the conversation at work here.
             page.presence.stop = { [weak app] in
-                Task { try? await app?.client.call("session/cancel", ["request": ["sessionId": .string(owner)]]) }
+                Task { try? await app?.client.call("session/cancel", ["request": ["sessionId": .string(place.conversation)]]) }
             }
             defer {
                 page.presence.ended()
@@ -138,14 +145,105 @@ import WebKit
     }
 }
 
-extension BrowserAgent {
-    /// 子智能体用的是发起它的那个会话的浏览器：用户只在主会话里看得到工作台。
+/// `BrowserOwnership` against the app's session list and Bot team.
+extension BrowserOwnership {
+    /// A browser found for a session: its key, and the conversation at work (downloads go to its
+    /// working directory; the panel's stop button ends its turn).
+    struct Place: Equatable {
+        let owner: String
+        let conversation: String
+    }
+
+    /// What the team says, or nil while it is not known yet: the engine is up, ds-bot may run Bots
+    /// here, and its `state` has not been read.
     @MainActor
-    static func owner(of session: String, in app: AppModel) -> String {
-        var id = session
-        var seen: Set<String> = [id]
-        while let parent = app.sessions[id]?.parentId, seen.insert(parent).inserted { id = parent }
-        return id
+    static func team(in app: AppModel) -> Team? {
+        let bots = app.botTeam
+        if bots.teamLoaded {
+            var team = Team()
+            for bot in bots.bots where !bot.id.isEmpty {
+                for session in bot.chatSessions { team.chats[session] = bot.id }
+            }
+            return team
+        }
+        switch bots.status {
+        // No Bot can run without the plugin: nothing to wait for.
+        case .notInstalled, .disabled, .wrongVersion: return Team.empty
+        case .unknown, .ready: return nil
+        }
+    }
+
+    @MainActor
+    static func conversation(of session: String, in app: AppModel) -> String {
+        conversation(of: session) { app.sessions[$0]?.parentId }
+    }
+
+    /// Where the app's pages find the browser of `session`, at once. Nil only in the moment after
+    /// the engine starts, before the team is read; `resolve` waits that out.
+    @MainActor
+    static func place(of session: String, in app: AppModel) -> Place? {
+        let conversation = conversation(of: session, in: app)
+        guard let owner = owner(of: conversation, parent: { _ in nil }, team: team(in: app)) else { return nil }
+        return Place(owner: owner, conversation: conversation)
+    }
+
+    /// The browser of `session` if it has one, without making one.
+    @MainActor
+    static func existing(of session: String, in app: AppModel) -> BrowserModel? {
+        place(of: session, in: app).flatMap { BrowserModel.existing($0.owner) }
+    }
+
+    /// The browser at `place`, made on first use.
+    @MainActor
+    static func browser(_ place: Place, origin: URL) -> BrowserModel {
+        let model = BrowserModel.owned(by: place.owner, origin: origin)
+        model.conversation = place.conversation
+        return model
+    }
+
+    /// The browser of `session`, for a page of the app: at once when the team is known, else once it is.
+    @MainActor
+    static func open(_ session: String, in app: AppModel, then use: @escaping @MainActor (BrowserModel) -> Void) {
+        if let place = place(of: session, in: app) {
+            use(browser(place, origin: app.client.origin))
+            return
+        }
+        Task { @MainActor in
+            let place = await resolve(session, in: app)
+            use(browser(place, origin: app.client.origin))
+        }
+    }
+
+    /// Sessions found once, after a fresh read of the team, to be no Bot's: they are not read for again.
+    @MainActor private static var ownConversations: Set<String> = []
+    /// Sessions the session list was read again for, once each.
+    @MainActor private static var listedFor: Set<String> = []
+    /// How long a call waits for the team to be read after the engine starts.
+    private static let teamWait: Duration = .seconds(8)
+
+    /// Where the agent's call from `session` goes. Unlike `place`, it waits for what the app does not
+    /// know yet, as a call may come from a Session the app has not seen:
+    /// - a subagent just started: the session list is read again, for its parent;
+    /// - the engine just started: the team is waited for, a few seconds at most. Without an answer by
+    ///   then the plugin is not running, and no Bot with it, so the session is its own;
+    /// - a Bot's chat just moved on to a new part: the team is read again, once per session.
+    @MainActor
+    static func resolve(_ session: String, in app: AppModel) async -> Place {
+        if app.sessions[session] == nil, listedFor.insert(session).inserted { await app.refreshSessions() }
+        let conversation = conversation(of: session, in: app)
+        let deadline = ContinuousClock.now + teamWait
+        while team(in: app) == nil, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        guard var team = team(in: app) else { return Place(owner: conversation, conversation: conversation) }
+        if team.bot(of: conversation) == nil, app.botTeam.teamLoaded,
+           !ownConversations.contains(conversation), !app.botTeam.teamSessionIds.contains(conversation) {
+            await app.botTeam.refreshState()
+            team = self.team(in: app) ?? team
+            if team.bot(of: conversation) == nil { ownConversations.insert(conversation) }
+        }
+        let owner = owner(of: conversation, parent: { _ in nil }, team: team) ?? conversation
+        return Place(owner: owner, conversation: conversation)
     }
 }
 

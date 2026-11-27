@@ -64,7 +64,9 @@ struct WorkbenchView: View {
             // A keyboard belongs to the tab that raised it.
             dismissKeyboard()
             visited.insert(selected)
-            if selected == .browser, browser == nil { browser = BrowserModel.session(model.sessionId, origin: app.client.origin) }
+            if selected == .browser, browser == nil {
+                BrowserOwnership.open(model.sessionId, in: app) { browser = $0 }
+            }
         }
     }
 

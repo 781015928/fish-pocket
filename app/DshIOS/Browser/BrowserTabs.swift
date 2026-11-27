@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// A conversation's browser (S-87): its tabs, which one is in front, and the one the agent works in.
+/// A Bot's chat has one for the Bot, across every part of it (`BrowserOwnership`).
 ///
 /// It is one browser, as on a desktop: the user and the agent see and use the same tabs. The agent
 /// lists them, opens, switches and closes them through the browser capability, and its other
@@ -48,8 +49,11 @@ final class BrowserModel {
     @ObservationIgnored var focusesAddress = false
 
     @ObservationIgnored let origin: URL
-    /// The conversation: downloads go to its working directory.
-    @ObservationIgnored let sessionId: String
+    /// Whose browser it is (`BrowserOwnership`): a conversation's session id, or `bot:<id>`.
+    @ObservationIgnored let owner: String
+    /// The conversation last at work in it, a Bot's latest part for a Bot's browser: downloads go to
+    /// its working directory.
+    @ObservationIgnored var conversation: String
     /// The agent's kept scripts (`addScript`), run in every tab on every page load until the app restarts.
     @ObservationIgnored var keptScripts: [BrowserScript] = []
     @ObservationIgnored var scriptCount = 0
@@ -74,37 +78,60 @@ final class BrowserModel {
     var hasPages: Bool { tabs.contains(where: \.started) }
     /// The agent is at work in one of the tabs.
     var agentBusy: Bool { tabs.contains { $0.page?.agentBusy == true } }
+    /// When the user closed the chat's small picture of the page (`BrowserThumbnail`); nil while it
+    /// shows. The tabs stay as they are; the picture comes back when the agent next comes to the
+    /// browser or the user opens a link. Kept in memory only: the app starts again with it shown.
+    private(set) var previewHiddenAt: Date?
+    var previewHidden: Bool { previewHiddenAt != nil }
+
+    func hidePreview() { previewHiddenAt = Date() }
+    func showPreview() { previewHiddenAt = nil }
 
     func tab(_ id: String) -> Tab? { tabs.first { $0.id == id } }
 
-    // MARK: One per conversation
+    // MARK: One per owner
 
-    /// The conversations' browsers. Observed, so a conversation can show that its browser has a page.
+    /// The browsers, by owner. Observed, so a conversation can show that its browser has a page.
     @MainActor @Observable final class Registry {
         fileprivate(set) var models: [String: BrowserModel] = [:]
     }
     static let registry = Registry()
 
-    /// This conversation's browser if it has one, without making one.
-    static func existing(_ sessionId: String) -> BrowserModel? { registry.models[sessionId] }
+    /// The owner's browser if it has one, without making one. Owners come from `BrowserOwnership`.
+    static func existing(_ owner: String) -> BrowserModel? { registry.models[owner] }
 
-    /// This conversation's browser, made on first use by the workbench, a link or the agent.
-    static func session(_ sessionId: String, origin: URL) -> BrowserModel {
-        if let model = registry.models[sessionId] { return model }
-        let model = BrowserModel(sessionId: sessionId, origin: origin)
-        registry.models[sessionId] = model
+    /// The owner's browser, made on first use by the workbench, a link or the agent. Owners come
+    /// from `BrowserOwnership`, which every caller goes through.
+    static func owned(by owner: String, origin: URL) -> BrowserModel {
+        if let model = registry.models[owner] { return model }
+        let model = BrowserModel(owner: owner, origin: origin)
+        registry.models[owner] = model
         return model
     }
 
-    private init(sessionId: String, origin: URL) {
+    /// The owner is gone (a Bot was deleted): its pages close, and the tabs kept across launches go.
+    static func forget(_ owner: String) {
+        if let model = registry.models.removeValue(forKey: owner) {
+            for tab in model.tabs { tab.page?.close() }
+            model.tabs = []
+            model.thumbnailTicker?.cancel()
+        }
+        UserDefaults.standard.removeObject(forKey: storageKey(of: owner))
+    }
+
+    private static func storageKey(of owner: String) -> String { "dsh.browser.tabs.\(owner)" }
+
+    private init(owner: String, origin: URL) {
         self.origin = origin
-        self.sessionId = sessionId
-        storageKey = "dsh.browser.tabs.\(sessionId)"
+        self.owner = owner
+        // A Bot's browser starts with its owner until a conversation uses it, which is at once.
+        conversation = owner
+        storageKey = Self.storageKey(of: owner)
         let defaults = UserDefaults.standard
         if let data = defaults.data(forKey: storageKey), let kept = try? JSONDecoder().decode(Kept.self, from: data) {
             restorable = kept.tabs
             restorableSelected = kept.selected
-        } else if let last = defaults.string(forKey: "dsh.browser.last.\(sessionId)") {
+        } else if let last = defaults.string(forKey: "dsh.browser.last.\(owner)") {
             // Kept by the one-page browser before tabs.
             restorable = [Saved(url: last, title: nil)]
         }
@@ -140,6 +167,7 @@ final class BrowserModel {
 
     /// A link the user tapped: always a tab of its own, so no page is replaced; a blank tab in front takes it.
     func openLink(_ url: String) {
+        showPreview()
         if let tab = selected, !tab.started, let page = tab.page {
             page.go(url)
         } else {
@@ -202,7 +230,7 @@ final class BrowserModel {
     @discardableResult
     func revive(_ tab: Tab) -> BrowserPage {
         if let page = tab.page { return page }
-        let page = BrowserPage(sessionId: sessionId, origin: origin, browser: self)
+        let page = BrowserPage(origin: origin, browser: self)
         page.changed = { [weak self] in self?.pageChanged() }
         tab.page = page
         tab.used = Date()
@@ -216,7 +244,7 @@ final class BrowserModel {
         return Tab(id: "t\(nextId)")
     }
 
-    /// Every live page of every conversation.
+    /// Every live page of every browser.
     static var livePages: [BrowserPage] { registry.models.values.flatMap { $0.tabs.compactMap(\.page) } }
 
     private static func trimLivePages(keeping kept: BrowserPage) {

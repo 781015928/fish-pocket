@@ -116,10 +116,11 @@ extension BrowserPage {
 }
 
 /// The page the agent works in, small, over the foot of the chat; a tap opens the browser. Until
-/// there is a picture, a globe.
+/// there is a picture, a globe. Its ✕ puts the picture away and leaves the tabs open.
 struct BrowserThumbnail: View {
     let browser: BrowserModel
     let action: () -> Void
+    let close: () -> Void
 
     var body: some View {
         let size = browser.thumbnailSize
@@ -158,7 +159,7 @@ struct BrowserThumbnail: View {
             .frame(width: size.width, height: size.height)
             .clipShape(shape)
             .overlay(shape.strokeBorder(Palette.stroke))
-            .overlay(alignment: .topTrailing) {
+            .overlay(alignment: .topLeading) {
                 if browser.agentBusy || browser.selected?.page?.loading == true {
                     Circle()
                         .fill(Palette.running)
@@ -171,8 +172,27 @@ struct BrowserThumbnail: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .bottomLeading)))
         .accessibilityLabel(Text("浏览器：\(site ?? "")"))
+        // Over the corner, as a badge: closing the picture is not closing a tab.
+        .overlay(alignment: .topTrailing) {
+            Button {
+                Haptics.tap()
+                close()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Palette.secondary)
+                    .frame(width: 20, height: 20)
+                    .background(Palette.background, in: Circle())
+                    .overlay(Circle().strokeBorder(Palette.stroke))
+                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+                    .hitTarget(32)
+            }
+            .buttonStyle(.plain)
+            .offset(x: 10, y: -10)
+            .accessibilityLabel(Text("关闭预览"))
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .bottomLeading)))
         .onAppear { browser.watchThumbnail(true) }
         .onDisappear { browser.watchThumbnail(false) }
         .onChange(of: browser.selectedId) { _, _ in browser.thumbnailStale(settle: 0) }

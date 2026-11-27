@@ -41,7 +41,7 @@ struct QuotaNotice: View {
         } else if route == FishPocketAPI.provider {
             if offer {
                 ConversationCard("Fish Pocket 额度已用完", "购买额度后，把刚才的消息重新发送一次。") {
-                    Button("购买额度") { Haptics.tap(); app.fishPocket.quotaPrompt = true }
+                    Button("购买积分") { Haptics.tap(); app.fishPocket.quotaPrompt = true }
                         .buttonStyle(.capsule(.primary, height: 44))
                     resendButton
                 }

@@ -202,6 +202,9 @@ final class AppModel {
     /// `api-session/status` from `$events`: the live running flag, which wins over
     /// `session/list` (that one can read idle while a tool call runs).
     @ObservationIgnored private var runningStatus: [String: Bool] = [:]
+    /// When each session's current turn began, as the app saw it start: the browser's picture
+    /// the user closed shows again in the agent's next turn (`BrowserAgent`).
+    @ObservationIgnored private(set) var turnStarted: [String: Date] = [:]
     @ObservationIgnored private var listeners: [UUID: (String, [JSON]) -> Void] = [:]
     /// Subagent children by parent, rebuilt with the list; rows ask per redraw.
     @ObservationIgnored private(set) var childSessions: [String: [String]] = [:]
@@ -436,6 +439,7 @@ final class AppModel {
     private func observeRunning(_ id: String, from old: Bool, to running: Bool) {
         if running { completionUnread.remove(id) }
         else if old && id != currentSession && id != botTeam.visibleSession { completionUnread.insert(id) }
+        if running && !old { turnStarted[id] = Date() }
     }
 
     /// One shared `schedule/catalog` read for the drawer and settings counts, the row clock

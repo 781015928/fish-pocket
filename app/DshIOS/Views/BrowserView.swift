@@ -31,10 +31,8 @@ final class BrowserPage: NSObject {
     /// A passing word under the page, such as a finished download.
     private(set) var notice: String?
 
-    /// The conversation this browser belongs to: downloads go to its working directory.
-    @ObservationIgnored let sessionId: String
-    /// The conversation's browser this page is a tab of: its kept scripts run here too, and its
-    /// downloads are listed there.
+    /// The browser this page is a tab of: its kept scripts run here too, and its downloads are
+    /// listed there and go to the working directory of its conversation.
     @ObservationIgnored weak var browser: BrowserModel?
     /// What the pages wrote to the console, and the requests their scripts made (`logs`).
     @ObservationIgnored var consoleLog: [[String: Any]] = []
@@ -68,8 +66,7 @@ final class BrowserPage: NSObject {
         for page in BrowserModel.livePages where page.webView.url != nil { page.webView.reload() }
     }
 
-    init(sessionId: String, origin: URL, browser: BrowserModel?) {
-        self.sessionId = sessionId
+    init(origin: URL, browser: BrowserModel?) {
         self.browser = browser
         self.origin = origin
         let configuration = WKWebViewConfiguration()
@@ -455,7 +452,8 @@ struct WorkbenchBrowser: View {
         .onDisappear {
             // The conversation was archived while its page was on screen, where it was left alone:
             // once it is put away, it goes too. After a moment, when the page has left the window.
-            let id = model.sessionId
+            // A Bot's browser is the Bot's, whose earlier parts are archived as it moves on: it stays.
+            let id = model.owner
             guard app.isArchived(id) else { return }
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(600))

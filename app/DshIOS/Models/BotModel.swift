@@ -12,6 +12,15 @@ struct BotInfo: Identifiable, Hashable {
     var sessionId: String { json["sessionId"].string ?? "" }
     /// Earlier parts of its own chat.
     var parts: [String] { json["parts"].array.compactMap(\.string) }
+    /// Every Session of its own chat: the current part, the earlier ones, and the parts opened
+    /// while it was busy (`openParts`, each with its own earlier parts), which ds-bot counts as
+    /// its own chat too.
+    var chatSessions: [String] {
+        let open = json["openParts"].array.flatMap { part in
+            [part["sessionId"].string].compactMap { $0 } + part["parts"].array.compactMap(\.string)
+        }
+        return ([sessionId] + parts + open).filter { !$0.isEmpty }
+    }
     var colorKey: String? { json["color"].string }
     /// Holds its greeting until the user picks a model (web: the model picker).
     var waiting: Bool { json["waiting"].bool ?? false }
@@ -122,6 +131,8 @@ final class BotModel {
     private static let liveKeys = ["connectors", "capabilityStatuses", "learning", "learningSettled", "memoryReviews", "imStatus", "imVia"]
     /// The route answered: the plugin is loaded in this engine.
     private(set) var reachable = false
+    /// The team has been read: which Sessions are the Bots' is known.
+    var teamLoaded: Bool { reachable && !team.isNull }
     /// Replies being written, by Session: the text so far.
     private(set) var writing: [String: String] = [:]
     /// Bumped whenever the feed (re)connects: what it missed is read again.
@@ -193,8 +204,11 @@ final class BotModel {
     var mainBotId: String? { team["mainBotId"].string }
     var mainBot: BotInfo? { bots.first { $0.id == mainBotId } ?? bots.first }
     func bot(_ id: String) -> BotInfo? { bots.first { $0.id == id } }
-    /// The Bot whose own chat `sessionId` is, current part or earlier.
-    func botOwning(_ sessionId: String) -> BotInfo? { bots.first { $0.sessionId == sessionId || $0.parts.contains(sessionId) } }
+    /// The Bot whose own chat `sessionId` is, any part of it (`chatSessions`).
+    func botOwning(_ sessionId: String) -> BotInfo? {
+        guard !sessionId.isEmpty else { return nil }
+        return bots.first { $0.chatSessions.contains(sessionId) }
+    }
     /// The chat a Session of the team is shown in: its Bot's, or its group's (a member's Session
     /// there included). Nil for a Session the team does not run.
     func route(ofSession sessionId: String) -> BotRoute? {
@@ -280,7 +294,7 @@ final class BotModel {
     var teamSessionIds: Set<String> {
         guard reachable else { return [] }
         var ids = Set<String>()
-        for bot in bots { ids.insert(bot.sessionId); ids.formUnion(bot.parts) }
+        for bot in bots { ids.formUnion(bot.chatSessions) }
         for room in rooms { ids.insert(room.sessionId); ids.formUnion(room.sessions) }
         ids.remove("")
         return ids
@@ -453,7 +467,10 @@ final class BotModel {
             // Each write tells every view that reads it, so only a change is written.
             if !reachable { reachable = true }
             if value["unchanged"].bool != true, team != value {
+                let gone = value["bots"].isNull ? [] : Set(bots.map(\.id)).subtracting(value["bots"].array.compactMap { $0["id"].string })
                 team = value
+                // A deleted Bot's browser goes with it, however it was deleted.
+                for id in gone where !id.isEmpty { BrowserModel.forget(BrowserOwnership.key(bot: id)) }
                 // Which sessions are Bot chats and which belong to groups decides where voice messages go.
                 VoiceMessageSync.shared.sync()
             }

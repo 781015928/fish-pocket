@@ -445,7 +445,7 @@ extension BrowserPage: WKDownloadDelegate {
         let source = download.originalRequest?.url?.absoluteString ?? response.url?.absoluteString ?? ""
         guard let browser else { return nil }
         do {
-            let path = try EnginePath.fresh(suggestedFilename, in: EnginePath.downloads(of: sessionId))
+            let path = try EnginePath.fresh(suggestedFilename, in: EnginePath.downloads(of: browser.conversation))
             browser.downloads.append(BrowserDownload(name: (path as NSString).lastPathComponent, path: path, url: source))
             downloadTasks[ObjectIdentifier(download)] = browser.downloads.count - 1
             return URL(fileURLWithPath: try EnginePath.real(path))

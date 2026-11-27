@@ -4,12 +4,15 @@ import SwiftUI
 /// piece that says what the entry does: the part being plugged in, the node that is lit, the
 /// phone in front of the computer. Drawn here rather than taken from SF Symbols, so the page has
 /// a look of its own, and in one color for all of them, so the page stays black and white.
+/// The Fish Pocket account page draws what credits are spent on with the same pen.
 ///
 /// Every icon is drawn on a 38-point grid and scaled to `size`.
 struct ExploreGlyph: View {
     enum Kind {
         case miniApps, plugins, connectors, phoneControl, remote, watch, shortcuts, web, share, settings
         case rate, site, feedback, wechat, discord, follow
+        /// What Fish Pocket credits are spent on.
+        case chat, imageGen, voice
     }
 
     let kind: Kind
@@ -36,6 +39,9 @@ struct ExploreGlyph: View {
             case .wechat: pen.wechat()
             case .discord: pen.discord()
             case .follow: pen.follow()
+            case .chat: pen.chat()
+            case .imageGen: pen.imageGen()
+            case .voice: pen.voice()
             }
         }
         .frame(width: size, height: size)
@@ -241,5 +247,38 @@ private struct Pen {
         })
         context.stroke(lines([(30, 5), (30, 17)], [(24, 11), (36, 11)]), with: spot,
                        style: StrokeStyle(lineWidth: 2.6, lineCap: .round))
+    }
+
+    /// A bubble with a reply in it, its last word still coming.
+    mutating func chat() {
+        stroke(Path { path in
+            path.move(to: CGPoint(x: 13, y: 27))
+            path.addLine(to: CGPoint(x: 10, y: 32.5))
+            path.addLine(to: CGPoint(x: 19, y: 27))
+            path.addLine(to: CGPoint(x: 28, y: 27))
+            path.addArc(tangent1End: CGPoint(x: 33, y: 27), tangent2End: CGPoint(x: 33, y: 22), radius: 5)
+            path.addLine(to: CGPoint(x: 33, y: 11))
+            path.addArc(tangent1End: CGPoint(x: 33, y: 6), tangent2End: CGPoint(x: 28, y: 6), radius: 5)
+            path.addLine(to: CGPoint(x: 10, y: 6))
+            path.addArc(tangent1End: CGPoint(x: 5, y: 6), tangent2End: CGPoint(x: 5, y: 11), radius: 5)
+            path.addLine(to: CGPoint(x: 5, y: 22))
+            path.addArc(tangent1End: CGPoint(x: 5, y: 27), tangent2End: CGPoint(x: 10, y: 27), radius: 5)
+            path.closeSubpath()
+        })
+        stroke(lines([(11, 13.5), (27, 13.5)], [(11, 19.5), (19, 19.5)]))
+        fill(box(21.5, 17, 5, 5, 1.4))
+    }
+
+    /// A picture: hills, and the sun over them.
+    mutating func imageGen() {
+        stroke(box(4.5, 7, 29, 24, 5))
+        stroke(lines([(5, 26.5), (14, 18), (20, 23.5), (24, 20), (33, 27.5)]))
+        fill(dot(24.5, 14, 3.6))
+    }
+
+    /// A sound wave, its loudest moment lit.
+    mutating func voice() {
+        stroke(lines([(7, 16), (7, 22)], [(13, 12), (13, 26)], [(25, 12), (25, 26)], [(31, 16), (31, 22)]))
+        fill(box(16.8, 6, 4.4, 26, 2.2))
     }
 }

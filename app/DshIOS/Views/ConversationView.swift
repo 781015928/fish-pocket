@@ -505,10 +505,10 @@ struct ConversationView: View {
     private var hasTools: Bool { bot?.tools ?? true }
 
     /// From the chat the browser opens full screen, the page alone: the workbench's other tabs are not
-    /// what the user came for. A subagent's page is its parent conversation's.
+    /// what the user came for. A subagent's page is its parent conversation's, a Bot's chat's the Bot's.
     private func openBrowser() {
         dismissKeyboard()
-        fullBrowser = BrowserModel.session(BrowserAgent.owner(of: sessionId, in: app), origin: app.client.origin)
+        BrowserOwnership.open(sessionId, in: app) { fullBrowser = $0 }
     }
 
     private func openWorkbench(_ tab: WorkbenchTab) {
@@ -1030,17 +1030,15 @@ private struct RowOrColumn: Layout {
     }
 }
 
-/// Where a link in the conversation opens: the browser of the session it belongs to, a subagent's
-/// being its parent's. That is looked up in the session list, so it is read in a modifier of its
-/// own: read in the conversation's body, every change to the list would redraw the whole page.
+/// Where a link in the conversation opens: the browser of the session it belongs to, found when
+/// the link is tapped (`BrowserOwnership`). In a modifier of its own, as it reads the app.
 private struct BrowserLinkScope: ViewModifier {
     @Environment(AppModel.self) private var app
     let sessionId: String
     let beside: Bool
 
     func body(content: Content) -> some View {
-        content.environment(\.browserLinks, BrowserLinks(
-            sessionId: BrowserAgent.owner(of: sessionId, in: app), origin: app.client.origin, beside: beside))
+        content.environment(\.browserLinks, BrowserLinks(sessionId: sessionId, origin: app.client.origin, beside: beside))
     }
 }
 

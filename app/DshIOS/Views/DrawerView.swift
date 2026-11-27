@@ -670,9 +670,15 @@ struct DrawerView: View {
     /// project on a computer, most recently used first. A project is a folder on one machine:
     /// two machines' projects of the same name stay two groups, each saying whose it is.
     private var placeGroups: [SessionGroup] {
-        // The Bot team's workspace holds only its sessions, which the Bot card lists.
+        // The Bots' own sessions are already left out (`sessions(in:)`), so the Bot team's
+        // workspace shows only the user's own conversations there: the team can be moved to
+        // a workspace the user also works in. Left with none, it is no group of its own.
         let team = app.botTeam.teamWorkspaceId
-        var result = app.workspaces.filter { $0.id != team }.map { SessionGroup(id: $0.id, workspace: $0, title: $0.displayTitle, rows: app.sessions(in: $0).map(Entry.local)) }
+        var result = app.workspaces.compactMap { workspace -> SessionGroup? in
+            let rows = app.sessions(in: workspace).map(Entry.local)
+            if workspace.id == team, rows.isEmpty { return nil }
+            return SessionGroup(id: workspace.id, workspace: workspace, title: workspace.displayTitle, rows: rows)
+        }
         let loose = app.sessions(in: nil)
         if !loose.isEmpty { result.append(SessionGroup(id: Self.ungrouped, title: String(localized: "未分组"), rows: loose.map(Entry.local))) }
         guard remote.signedIn else { return result }
@@ -786,10 +792,17 @@ struct DrawerView: View {
         .plainRow()
         .contextMenu {
             if let workspace = group.workspace {
-                Button { setExpanded(group, true); newConversation(workspace) } label: { Label("新会话", systemImage: "square.and.pencil") }
+                // New conversations stay out of the Bot team's workspace (see `MainView.workspace`).
+                let team = workspace.id == app.botTeam.teamWorkspaceId
+                if !team {
+                    Button { setExpanded(group, true); newConversation(workspace) } label: { Label("新会话", systemImage: "square.and.pencil") }
+                }
                 Button { app.renameRequest = RenameRequest(target: .workspace(workspace.id), initial: workspace.displayTitle) } label: { Label("重命名", systemImage: "pencil") }
                 Button { copyToPasteboard(workspace.path); app.showToast(String(localized: "已复制"), tone: .success) } label: { Label("复制路径", systemImage: "doc.on.doc") }
-                Button(role: .destructive) { removingWorkspace = workspace } label: { Label("删除工作区", systemImage: "trash") }
+                // The Bots work in it: the team's own settings move them elsewhere first.
+                if !team {
+                    Button(role: .destructive) { removingWorkspace = workspace } label: { Label("删除工作区", systemImage: "trash") }
+                }
             } else if let device = group.device {
                 Button { app.remoteSessionRequest = RemoteSessionTarget(deviceId: device.id, projectId: group.project?.id) } label: {
                     Label("新会话", systemImage: "square.and.pencil")
