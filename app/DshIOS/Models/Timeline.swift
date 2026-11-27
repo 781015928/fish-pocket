@@ -432,6 +432,12 @@ struct TurnInfo: Hashable {
     var steered = false
     /// Paths written or edited, by the name a closing message may use for them (C-24).
     var producedPaths: [String] = []
+
+    mutating func recordClosing(_ text: String, at time: Date) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        closingText = text
+        closingTime = time
+    }
 }
 
 /// A question the agent is waiting on (ask_user_question, plan review…).
@@ -666,7 +672,7 @@ struct TimelineBuilder {
         case "tool/result":
             // Pruning rewrites old results for the model under the same call id; the card keeps the original.
             if !event["surfaceOp"].isNull, event["surfaceOp"].string != "append" { return false }
-            return applyToolResult(data)
+            return applyToolResult(data, time: time)
         case "todo/write":
             lastTodos = data["todos"].array.map { TodoItem(content: $0["content"].string ?? "", status: $0["status"].string ?? "pending") }
             return false
@@ -828,11 +834,7 @@ struct TimelineBuilder {
             }
         }
         var info = turnInfo[turn] ?? TurnInfo()
-        let closing = texts.joined()
-        if !closing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            info.closingTime = time
-            info.closingText = closing
-        }
+        info.recordClosing(texts.joined(), at: time)
         let exact = !data["usage"]["totalTokens"].isNull || (!data["usage"]["cacheReadTokens"].isNull && !data["usage"]["cacheWriteTokens"].isNull)
         // Without the turn's start or an exact count the sum would be a guess; the capsule hides.
         if info.startedAt == nil || !exact { info.usageBroken = true }
@@ -860,7 +862,7 @@ struct TimelineBuilder {
         return true
     }
 
-    private mutating func applyToolResult(_ data: JSON) -> Bool {
+    private mutating func applyToolResult(_ data: JSON, time: Date) -> Bool {
         let message = data["message"]
         guard let callId = message["toolCallId"].string ?? message["source"]["callId"].string ?? data["callId"].string,
               let location = toolIndex[callId],
@@ -883,6 +885,7 @@ struct TimelineBuilder {
                 blocks.removeLast()
             } else {
                 blocks[location.block] = .text(id: callId, text: speech.text)
+                turnInfo[t, default: TurnInfo()].recordClosing(speech.text, at: time)
             }
             toolIndex.removeValue(forKey: callId)
         } else {
